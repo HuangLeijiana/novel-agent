@@ -223,4 +223,4 @@ A: The pipeline is language-aware. Set `language` in your project config. Prompt
 
 ## License
 
-MIT © [Huang Leijian](https://github.com/HuangLeijiana)
+MIT © [Huang Lei](https://github.com/HuangLeijiana)

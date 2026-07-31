@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
-    { name = "Huang Leijian", email = "huangleijian@outlook.com" }
+    { name = "Huang Lei", email = "huangleijian@outlook.com" }
 ]
 keywords = ["novel", "writing", "ai", "langgraph", "multi-agent"]
 
