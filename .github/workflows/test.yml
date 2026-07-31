@@ -1,0 +1,74 @@
+name: Test
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+  unit:
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run unit tests
+        run: uv run pytest tests/test_unit.py -v
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: unit
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run integration tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.MODELSCOPE_API_KEY }}
+          OPENAI_BASE_URL: https://api-inference.modelscope.cn/v1
+          DEFAULT_PROVIDER: modelscope
+          DEFAULT_MODEL: Qwen/Qwen3-235B-A22B
+        run: uv run pytest tests/ -v -k "modelscope"
+        continue-on-error: true
