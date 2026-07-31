@@ -47,3 +47,4 @@ models/
 # ── Misc ──
 *.log
 novel-agent.git/
+uv.lock
