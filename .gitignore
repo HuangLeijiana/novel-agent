@@ -1,0 +1,48 @@
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Virtual Environment ──
+.venv/
+venv/
+env/
+
+# ── Environment (secrets) ──
+.env
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Testing ──
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+
+# ── Project: generated output ──
+workspace/
+
+# ── Project: debug artifacts ──
+feilu-rank-snapshot.md
+feilu_debug.html
+
+# ── Project: downloaded models ──
+models/
+
+# ── Playwright MCP ──
+.playwright-mcp/
+
+# ── Misc ──
+*.log

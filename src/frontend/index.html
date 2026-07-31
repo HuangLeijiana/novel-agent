@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novel Agent</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div id="app">
+        <aside id="sidebar">
+            <div class="sidebar-header"><span class="brand">Novel Agent</span></div>
+            <nav id="nav">
+                <a href="#workspace" class="nav-item active" data-view="workspace" id="nav-workspace">工作台</a>
+                <a href="#my-works" class="nav-item" data-view="my-works" id="nav-my-works">我的书库</a>
+                <a href="#assistant" class="nav-item" data-view="assistant" id="nav-assistant">智能写作助手</a>
+            </nav>
+            <div class="sidebar-footer"><span id="api-status" class="status-dot offline">API</span></div>
+        </aside>
+
+        <main id="main-content">
+            <!-- 工作台 = 创作流水线 -->
+            <section id="view-workspace" class="view active">
+                <div id="workspace-pipeline">
+                    <div class="workspace-toolbar" id="workspace-toolbar">
+                        <div class="workspace-project-header" id="workspace-project-header" style="display:none">
+                            <a href="#my-works" class="back-to-library" onclick="App.goToLibrary()">← 返回书库</a>
+                            <span class="project-title-display" id="project-title-display"></span>
+                        </div>
+                        <h2 id="workspace-default-title">创作流水线</h2>
+                    </div>
+                    <p class="welcome-subtitle">从选题到成书，AI 全程辅助你的创作之旅</p>
+
+                    <!-- Step 1: Platform Scan -->
+                    <div class="pipeline-step" id="pipeline-step-scan" data-step="scan">
+                        <div class="pipeline-node">
+                            <div class="pipeline-icon">🔍</div>
+                            <div class="pipeline-line"></div>
+                        </div>
+                        <div class="pipeline-card">
+                            <div class="pipeline-card-header">
+                                <h3>平台扫榜</h3>
+                                <span class="pipeline-badge" id="badge-scan">待执行</span>
+                            </div>
+                            <div class="pipeline-card-body" id="body-scan">
+                                <p class="pipeline-desc">抓取飞卢、番茄等平台热门榜单，AI 自动提取题材趋势和读者口味</p>
+                                <div class="step-action-bar" id="action-scan">
+                                    <button class="btn btn-primary" id="btn-start-scan" onclick="App.startScan()">开始扫榜</button>
+                                </div>
+                                <div id="scan-input-area" style="display:none">
+                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+                                        <div><label style="font-size:0.8rem;color:var(--text-secondary)">飞卢榜单 HTML</label><textarea id="scan-feilu" placeholder="粘贴飞卢榜单页面内容..." style="width:100%;min-height:80px;padding:8px;background:var(--bg-input);border:1px solid var(--border);border-radius:4px;font-size:0.78rem;font-family:monospace;resize:vertical"></textarea></div>
+                                        <div><label style="font-size:0.8rem;color:var(--text-secondary)">番茄榜单 HTML</label><textarea id="scan-fanqie" placeholder="粘贴番茄榜单页面内容..." style="width:100%;min-height:80px;padding:8px;background:var(--bg-input);border:1px solid var(--border);border-radius:4px;font-size:0.78rem;font-family:monospace;resize:vertical"></textarea></div>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm" onclick="App.submitScan()">提交扫榜</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="App.skipScan()">跳过，直接创作</button>
+                                </div>
+                                <div id="scan-result-area" style="display:none"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Topic Selection -->
+                    <div class="pipeline-step" id="pipeline-step-topic" data-step="topic">
+                        <div class="pipeline-node">
+                            <div class="pipeline-icon">🎯</div>
+                            <div class="pipeline-line"></div>
+                        </div>
+                        <div class="pipeline-card">
+                            <div class="pipeline-card-header">
+                                <h3>选题研究</h3>
+                                <span class="pipeline-badge" id="badge-topic">待执行</span>
+                            </div>
+                            <div class="pipeline-card-body" id="body-topic">
+                                <p class="pipeline-desc">双榜交叉分析 → 对标书拆解 → 12 个候选题材 → 8 维评分 → 书名简介生成</p>
+                                <!-- Candidate topic checkboxes -->
+                                <div id="topic-candidates-area" style="display:none">
+                                    <p style="font-weight:600;font-size:0.82rem;margin-bottom:6px">☑ 候选题材（勾选后点击生成简介）</p>
+                                    <div id="topic-candidates-list" class="topic-candidates-list"></div>
+                                    <div style="display:flex;gap:8px;margin-top:8px">
+                                        <button class="btn btn-primary btn-sm" id="btn-gen-synopsis" onclick="App.generateSynopses()">生成简介</button>
+                                        <span style="font-size:0.75rem;color:var(--text-secondary);align-self:center" id="candidate-hint">已选 0 个</span>
+                                    </div>
+                                </div>
+                                <!-- Synopsis cards (generated one by one) -->
+                                <div id="topic-synopsis-cards" style="display:none"></div>
+                                <!-- AI title generation (optional fallback) -->
+                                <div id="topic-ai-area" style="display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)">
+                                    <p style="font-weight:600;font-size:0.8rem;margin-bottom:4px;color:var(--text-secondary)">💡 以上题材都不满意？输入你的想法，AI 帮你起书名</p>
+                                    <div style="display:flex;gap:8px">
+                                        <input type="text" id="topic-ai-input" placeholder="输入灵感或想法，AI 结合榜单数据生成书名..." style="flex:1;padding:8px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:4px;font-size:0.85rem;color:var(--text-primary)">
+                                        <button class="btn btn-secondary btn-sm" id="btn-ai-generate" onclick="App.aiGenerateTitles()">生成</button>
+                                    </div>
+                                    <div id="topic-ai-results" style="margin-top:8px"></div>
+                                </div>
+                                <!-- Confirm bar -->
+                                <div id="topic-confirm-area" style="display:none" class="confirm-bar">
+                                    <textarea id="topic-inspiration" placeholder="补充灵感或想法（可选）..." rows="2"></textarea>
+                                    <button class="btn btn-success" onclick="App.confirmTopic()">确认选题，创建项目 →</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Mini-Arc Outline -->
+                    <div class="pipeline-step" id="pipeline-step-arc" data-step="arc">
+                        <div class="pipeline-node">
+                            <div class="pipeline-icon">📋</div>
+                            <div class="pipeline-line"></div>
+                        </div>
+                        <div class="pipeline-card">
+                            <div class="pipeline-card-header">
+                                <h3>小事件大纲</h3>
+                                <span class="pipeline-badge" id="badge-arc">待执行</span>
+                            </div>
+                            <div class="pipeline-card-body" id="body-arc">
+                                <p class="pipeline-desc">为选定题材生成 10 章小事件闭环大纲，每章 2000 字，确保开篇即爆</p>
+                                <div id="arc-result-area" style="display:none"></div>
+                                <div id="arc-confirm-area" style="display:none" class="confirm-bar">
+                                    <textarea id="arc-inspiration" placeholder="补充灵感或修改意见（可选）..." rows="2"></textarea>
+                                    <button class="btn btn-success" onclick="App.confirmStep('arc')">确认大纲，继续 →</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: World Bible -->
+                    <div class="pipeline-step" id="pipeline-step-bible" data-step="bible">
+                        <div class="pipeline-node">
+                            <div class="pipeline-icon">🌍</div>
+                            <div class="pipeline-line"></div>
+                        </div>
+                        <div class="pipeline-card">
+                            <div class="pipeline-card-header">
+                                <h3>世界观构建</h3>
+                                <span class="pipeline-badge" id="badge-bible">待执行</span>
+                            </div>
+                            <div class="pipeline-card-body" id="body-bible">
+                                <p class="pipeline-desc">AI 设计完整的世界设定：地理、历史、文化、势力、力量体系、文风契约</p>
+                                <div id="bible-result-area" style="display:none"></div>
+                                <div id="bible-confirm-area" style="display:none" class="confirm-bar">
+                                    <textarea id="bible-inspiration" placeholder="补充世界观想法或修改意见（可选）..." rows="2"></textarea>
+                                    <button class="btn btn-success" onclick="App.confirmStep('bible')">确认世界观，继续 →</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 5: Characters -->
+                    <div class="pipeline-step" id="pipeline-step-chars" data-step="chars">
+                        <div class="pipeline-node">
+                            <div class="pipeline-icon">👥</div>
+                            <div class="pipeline-line"></div>
+                        </div>
+                        <div class="pipeline-card">
+                            <div class="pipeline-card-header">
+                                <h3>角色创建</h3>
+                                <span class="pipeline-badge" id="badge-chars">待执行</span>
+                            </div>
+                            <div class="pipeline-card-body" id="body-chars">
+                                <p class="pipeline-desc">创建主角、反派、配角阵容，设计性格、动机、关系和成长弧线</p>
+                                <div id="chars-result-area" style="display:none"></div>
+                                <div id="chars-confirm-area" style="display:none" class="confirm-bar">
+                                    <textarea id="chars-inspiration" placeholder="补充角色想法或修改意见（可选）..." rows="2"></textarea>
+                                    <button class="btn btn-success" onclick="App.confirmStep('chars')">确认角色，继续 →</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 6: Master Outline -->
+                    <div class="pipeline-step" id="pipeline-step-outline" data-step="outline">
+                        <div class="pipeline-node">
+                            <div class="pipeline-icon">📚</div>
+                            <div class="pipeline-line"></div>
+                        </div>
+                        <div class="pipeline-card">
+                            <div class="pipeline-card-header">
+                                <h3>大纲生成</h3>
+                                <span class="pipeline-badge" id="badge-outline">待执行</span>
+                            </div>
+                            <div class="pipeline-card-body" id="body-outline">
+                                <p class="pipeline-desc">规划完整故事结构：分卷、主线支线、关键转折点、章节分配</p>
+                                <div id="outline-result-area" style="display:none"></div>
+                                <div id="outline-confirm-area" style="display:none" class="confirm-bar">
+                                    <textarea id="outline-inspiration" placeholder="补充大纲想法或修改意见（可选）..." rows="2"></textarea>
+                                    <button class="btn btn-success" onclick="App.confirmStep('outline')">确认大纲，开始写作 →</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 7: Writing -->
+                    <div class="pipeline-step" id="pipeline-step-write" data-step="write">
+                        <div class="pipeline-node">
+                            <div class="pipeline-icon">✍️</div>
+                        </div>
+                        <div class="pipeline-card">
+                            <div class="pipeline-card-header">
+                                <h3>章节写作</h3>
+                                <span class="pipeline-badge" id="badge-write">待执行</span>
+                            </div>
+                            <div class="pipeline-card-body" id="body-write">
+                                <p class="pipeline-desc">AI 逐章写作，含质量审核、润色修订和记忆更新，支持中断续写</p>
+                                <div id="write-result-area" style="display:none"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 我的书库 = 项目列表 -->
+            <section id="view-my-works" class="view">
+                <h2>我的书库</h2>
+                <div id="my-works-cards" class="card-grid"><p class="empty-state">暂无项目，前往<a href="#workspace">工作台</a>开始创作</p></div>
+            </section>
+
+            <!-- 项目详情 = 独立页面 -->
+            <section id="view-project" class="view">
+                <h2 id="project-title">项目详情</h2>
+                <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+                <div id="phase-label" class="phase-label">就绪</div>
+                <div class="tabs">
+                    <button class="tab active" data-tab="overview">概览</button>
+                    <button class="tab" data-tab="topics">选题研究</button>
+                    <button class="tab" data-tab="bible">世界观</button>
+                    <button class="tab" data-tab="characters">角色</button>
+                    <button class="tab" data-tab="outline">大纲</button>
+                    <button class="tab" data-tab="chapters">章节</button>
+                </div>
+                <div id="tab-overview" class="tab-content active"><div id="overview-content"></div></div>
+                <div id="tab-topics" class="tab-content"><div id="topics-content"></div></div>
+                <div id="tab-bible" class="tab-content"><div id="bible-content"></div></div>
+                <div id="tab-characters" class="tab-content"><div id="characters-content"></div></div>
+                <div id="tab-outline" class="tab-content"><div id="outline-content"></div></div>
+                <div id="tab-chapters" class="tab-content"><div id="chapters-content"></div></div>
+                <div id="chapter-modal" class="modal"><div class="modal-content"><span class="modal-close">&times;</span><div id="chapter-modal-body"></div></div></div>
+            </section>
+
+            <!-- 智能写作助手 -->
+            <section id="view-assistant" class="view">
+                <div class="assistant-layout">
+                    <div class="chat-main">
+                        <div class="chat-messages" id="chat-messages">
+                            <div class="chat-welcome">
+                                <h2>智能小说写作助手</h2>
+                                <p>我可以帮你：</p>
+                                <div class="assistant-suggestions">
+                                    <button onclick="App.quickChat('帮我分析这段文字的优点和不足')">分析文字</button>
+                                    <button onclick="App.quickChat('帮我润色下面这段小说')">润色文字</button>
+                                    <button onclick="App.quickChat('帮我基于这个创意写一段开头')">创意写作</button>
+                                    <button onclick="App.quickChat('给我一些关于人物塑造的建议')">写作建议</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-input-area">
+                            <div class="chat-toolbar">
+                                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('assistant-file-input').click()">上传文件</button>
+                                <input type="file" id="assistant-file-input" accept=".txt,.md" style="display:none" onchange="App.handleAssistantFile(event)">
+                                <span id="assistant-file-name" class="file-name"></span>
+                                <select id="chat-mode" class="chat-mode-select">
+                                    <option value="chat">自由对话</option><option value="analyze">分析文本</option><option value="polish">润色改写</option><option value="rewrite">创意改写</option>
+                                </select>
+                            </div>
+                            <div class="chat-input-row">
+                                <textarea id="chat-input" placeholder="输入消息，或粘贴需要处理的文本..." rows="2"></textarea>
+                                <button class="btn btn-primary" onclick="App.sendAssistantMessage()">发送</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/api.js?v=22"></script>
+    <script src="/static/js/components.js?v=22"></script>
+    <script src="/static/js/app.js?v=22"></script>
+</body>
+</html>
