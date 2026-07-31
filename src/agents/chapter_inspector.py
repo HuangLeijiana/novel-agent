@@ -35,9 +35,11 @@ logger = logging.getLogger(__name__)
 # Data structures
 # ============================================================
 
+
 @dataclass
 class InspectionResult:
     """Result of chapter structural inspection."""
+
     passed: bool = True
     word_count: int = 0
     target_word_count: int = 3000
@@ -72,27 +74,28 @@ class InspectionResult:
 # ============================================================
 
 AI_FLAVOR_PATTERNS: list[tuple[str, str]] = [
-    (r'综上所述', '机械过渡词"综上所述"'),
-    (r'值得注意的是', '机械表达"值得注意的是"'),
-    (r'在.+的过程中', 'AI常用句式"在...的过程中"'),
-    (r'不仅.+而且', 'AI常用关联词"不仅...而且"'),
-    (r'然而\s*，', 'AI常用转折"然而"'),
-    (r'因此\s*，', 'AI常用因果"因此"'),
-    (r'与此同时\s*，', 'AI常用过渡"与此同时"'),
-    (r'总而言之', '机械总结"总而言之"'),
-    (r'从某种(?:意义|程度)上来说', 'AI常用模糊表达'),
-    (r'不可否认的是', 'AI常用强调'),
-    (r'可以(?:说|理解为|看作是)', 'AI常用解释句式'),
-    (r'他感到一阵', 'AI常用情感描写"感到一阵"'),
-    (r'他的(?:心中|内心|心里)', 'AI常用内心独白引入'),
-    (r'显得(?:格外|异常|十分)', 'AI常用程度修饰'),
-    (r'仿佛', 'AI常用比喻引入"仿佛"（检查是否滥用）'),
+    (r"综上所述", '机械过渡词"综上所述"'),
+    (r"值得注意的是", '机械表达"值得注意的是"'),
+    (r"在.+的过程中", 'AI常用句式"在...的过程中"'),
+    (r"不仅.+而且", 'AI常用关联词"不仅...而且"'),
+    (r"然而\s*，", 'AI常用转折"然而"'),
+    (r"因此\s*，", 'AI常用因果"因此"'),
+    (r"与此同时\s*，", 'AI常用过渡"与此同时"'),
+    (r"总而言之", '机械总结"总而言之"'),
+    (r"从某种(?:意义|程度)上来说", "AI常用模糊表达"),
+    (r"不可否认的是", "AI常用强调"),
+    (r"可以(?:说|理解为|看作是)", "AI常用解释句式"),
+    (r"他感到一阵", 'AI常用情感描写"感到一阵"'),
+    (r"他的(?:心中|内心|心里)", "AI常用内心独白引入"),
+    (r"显得(?:格外|异常|十分)", "AI常用程度修饰"),
+    (r"仿佛", 'AI常用比喻引入"仿佛"（检查是否滥用）'),
 ]
 
 
 # ============================================================
 # Inspector
 # ============================================================
+
 
 class ChapterInspector:
     """Deterministic structural inspector for chapter drafts.
@@ -106,14 +109,14 @@ class ChapterInspector:
 
     # ── Configuration ──────────────────────────────────────────
 
-    WORD_COUNT_TOLERANCE: float = 0.15       # ±15%
-    MIN_DIALOGUE_RATIO: float = 0.20         # 20% minimum
-    MAX_DIALOGUE_RATIO: float = 0.60         # 60% maximum (web novel target: 30-50%)
+    WORD_COUNT_TOLERANCE: float = 0.15  # ±15%
+    MIN_DIALOGUE_RATIO: float = 0.20  # 20% minimum
+    MAX_DIALOGUE_RATIO: float = 0.60  # 60% maximum (web novel target: 30-50%)
     IDEAL_DIALOGUE_MIN: float = 0.30
     IDEAL_DIALOGUE_MAX: float = 0.50
-    MAX_PARAGRAPH_LENGTH: int = 500          # Characters before "wall of text"
-    MIN_ENDING_HOOK_LENGTH: int = 50         # Last paragraph should be > 50 chars
-    AI_MARKER_WARN_THRESHOLD: int = 2        # Flag if ≥ this many AI markers found
+    MAX_PARAGRAPH_LENGTH: int = 500  # Characters before "wall of text"
+    MIN_ENDING_HOOK_LENGTH: int = 50  # Last paragraph should be > 50 chars
+    AI_MARKER_WARN_THRESHOLD: int = 2  # Flag if ≥ this many AI markers found
     AI_MARKER_FAIL_THRESHOLD: int = 5
 
     def inspect(
@@ -141,7 +144,8 @@ class ChapterInspector:
             result.target_word_count = chapter_plan.word_count_target
         result.word_count_deviation = (
             (result.word_count - result.target_word_count) / result.target_word_count
-            if result.target_word_count > 0 else 0
+            if result.target_word_count > 0
+            else 0
         )
         result.word_count_ok = abs(result.word_count_deviation) <= self.WORD_COUNT_TOLERANCE
         if not result.word_count_ok:
@@ -155,14 +159,10 @@ class ChapterInspector:
         result.dialogue_ratio = self._estimate_dialogue_ratio(content)
         if result.dialogue_ratio < self.MIN_DIALOGUE_RATIO:
             result.dialogue_ok = False
-            result.warnings.append(
-                f"对话比例偏低（{result.dialogue_ratio:.0%}），建议≥{self.MIN_DIALOGUE_RATIO:.0%}"
-            )
+            result.warnings.append(f"对话比例偏低（{result.dialogue_ratio:.0%}），建议≥{self.MIN_DIALOGUE_RATIO:.0%}")
         elif result.dialogue_ratio > self.MAX_DIALOGUE_RATIO:
             result.dialogue_ok = False
-            result.warnings.append(
-                f"对话比例偏高（{result.dialogue_ratio:.0%}），建议≤{self.MAX_DIALOGUE_RATIO:.0%}"
-            )
+            result.warnings.append(f"对话比例偏高（{result.dialogue_ratio:.0%}），建议≤{self.MAX_DIALOGUE_RATIO:.0%}")
         elif result.dialogue_ratio < self.IDEAL_DIALOGUE_MIN:
             result.warnings.append(
                 f"对话比例略低（{result.dialogue_ratio:.0%}），网文推荐{self.IDEAL_DIALOGUE_MIN:.0%}-{self.IDEAL_DIALOGUE_MAX:.0%}"
@@ -183,8 +183,7 @@ class ChapterInspector:
                 )
             if result.avg_paragraph_length > 300:
                 result.warnings.append(
-                    f"平均段落长度{result.avg_paragraph_length:.0f}字偏长，"
-                    f"网文建议控制在200-300字/段"
+                    f"平均段落长度{result.avg_paragraph_length:.0f}字偏长，网文建议控制在200-300字/段"
                 )
 
         # ── 4. Chapter-end hook ──
@@ -207,13 +206,9 @@ class ChapterInspector:
         result.ai_markers = self._detect_ai_markers(content)
         result.ai_marker_count = len(result.ai_markers)
         if result.ai_marker_count >= self.AI_MARKER_FAIL_THRESHOLD:
-            result.issues.append(
-                f"AI味严重：检测到{result.ai_marker_count}处AI常用表达"
-            )
+            result.issues.append(f"AI味严重：检测到{result.ai_marker_count}处AI常用表达")
         elif result.ai_marker_count >= self.AI_MARKER_WARN_THRESHOLD:
-            result.warnings.append(
-                f"检测到{result.ai_marker_count}处AI常用表达，建议润色"
-            )
+            result.warnings.append(f"检测到{result.ai_marker_count}处AI常用表达，建议润色")
 
         # ── Determine overall pass/fail ──
         result.passed = len(result.issues) == 0
@@ -224,10 +219,7 @@ class ChapterInspector:
                 f"{len(result.issues)} issues, {len(result.warnings)} warnings"
             )
         else:
-            logger.info(
-                f"Chapter {draft.chapter_number} inspection: PASSED "
-                f"({len(result.warnings)} minor warnings)"
-            )
+            logger.info(f"Chapter {draft.chapter_number} inspection: PASSED ({len(result.warnings)} minor warnings)")
 
         return result
 
@@ -247,13 +239,13 @@ class ChapterInspector:
         # Count characters inside Chinese dialogue markers
         dialogue_chars = 0
         # Chinese dialogue: 「...」 or "..."
-        for pattern in [r'「[^」]*」', r'『[^』]*』', r'"[^"]*"', r'"[^"]*"']:
+        for pattern in [r"「[^」]*」", r"『[^』]*』", r'"[^"]*"', r'"[^"]*"']:
             for match in re.finditer(pattern, content):
                 dialogue_chars += len(match.group())
 
         # Also count lines that start with character name patterns (play-style dialogue)
         # 角色名：... or 角色名:...
-        name_dialogue = re.findall(r'(?:^|\n)\S{1,4}[：:][^\n]{10,}', content)
+        name_dialogue = re.findall(r"(?:^|\n)\S{1,4}[：:][^\n]{10,}", content)
         for line in name_dialogue:
             dialogue_chars += len(line)
 
@@ -267,7 +259,7 @@ class ChapterInspector:
     @staticmethod
     def _split_paragraphs(content: str) -> list[str]:
         """Split content into paragraphs (non-empty lines)."""
-        return [p.strip() for p in content.split('\n') if p.strip() and p.strip() != '***']
+        return [p.strip() for p in content.split("\n") if p.strip() and p.strip() != "***"]
 
     @staticmethod
     def _check_ending_hook(content: str) -> tuple[bool, str]:
@@ -279,33 +271,33 @@ class ChapterInspector:
             return False, "missing"
 
         # Get last meaningful paragraph(s)
-        paragraphs = [p.strip() for p in content.split('\n') if p.strip() and p.strip() != '***']
+        paragraphs = [p.strip() for p in content.split("\n") if p.strip() and p.strip() != "***"]
         if not paragraphs:
             return False, "missing"
 
         # Analyze last 2 paragraphs
         last = paragraphs[-1]
-        last_two = ' '.join(paragraphs[-2:]) if len(paragraphs) >= 2 else last
+        last_two = " ".join(paragraphs[-2:]) if len(paragraphs) >= 2 else last
 
         # Strong hook indicators
         strong_patterns = [
-            r'[？?]',           # Question ending
-            r'[！!]',           # Exclamation
-            r'突然|忽然|就在这时|正在这时|猛地',
-            r'却|竟然|居然|没想到|不料',
-            r'下一[步个秒刻章]|明天|即将|将要|马上',
-            r'暗[中处]|阴影|背后|秘密|真相',
-            r'危险|危机|杀[意气机]|死亡',
-            r'冷笑|诡异|神秘|未知|奇怪',
-            r'难道|莫非|难道说',
-            r'……$|\.{3}$',     # Ellipsis ending
-            r'嘴角|眼神|目光',  # Micro-expression hook
+            r"[？?]",  # Question ending
+            r"[！!]",  # Exclamation
+            r"突然|忽然|就在这时|正在这时|猛地",
+            r"却|竟然|居然|没想到|不料",
+            r"下一[步个秒刻章]|明天|即将|将要|马上",
+            r"暗[中处]|阴影|背后|秘密|真相",
+            r"危险|危机|杀[意气机]|死亡",
+            r"冷笑|诡异|神秘|未知|奇怪",
+            r"难道|莫非|难道说",
+            r"……$|\.{3}$",  # Ellipsis ending
+            r"嘴角|眼神|目光",  # Micro-expression hook
         ]
 
         # Weak ending indicators
         weak_patterns = [
-            r'^(?:就这样|于是|然后|接着|之后)',
-            r'^(?:他|她|它)(?:想|觉得|知道|明白)',
+            r"^(?:就这样|于是|然后|接着|之后)",
+            r"^(?:他|她|它)(?:想|觉得|知道|明白)",
         ]
 
         strong_count = sum(1 for p in strong_patterns if re.search(p, last_two))
@@ -326,7 +318,7 @@ class ChapterInspector:
     @staticmethod
     def _count_scenes(content: str) -> int:
         """Count scene breaks (*** or --- markers)."""
-        scene_breaks = re.findall(r'^(?:\*{3,}|-{3,})$', content, re.MULTILINE)
+        scene_breaks = re.findall(r"^(?:\*{3,}|-{3,})$", content, re.MULTILINE)
         return len(scene_breaks) + 1  # N breaks = N+1 scenes
 
     @staticmethod
@@ -351,12 +343,10 @@ class ChapterInspector:
             "",
             f"字数：{result.word_count}/{result.target_word_count} "
             f"({'[OK] 达标' if result.word_count_ok else '[FAIL] 偏差' + f'{result.word_count_deviation:+.0%}'}) ",
-            f"对话比例：{result.dialogue_ratio:.0%} "
-            f"({'[OK]' if result.dialogue_ok else '[WARN]'})",
+            f"对话比例：{result.dialogue_ratio:.0%} ({'[OK]' if result.dialogue_ok else '[WARN]'})",
             f"段落数：{result.paragraph_count} | 平均{result.avg_paragraph_length:.0f}字/段",
             f"超长段落：{result.wall_of_text_count}个",
             f"章末钩子：{'[OK] 强' if result.ending_hook_quality == 'strong' else '[WARN] 弱' if result.ending_hook_quality == 'weak' else '[FAIL] 缺失'}",
-
             f"场景数：约{result.scene_count_actual}个{' (规划' + str(result.scene_count_planned) + '个)' if result.scene_count_planned else ''}",
             f"AI味标记：{result.ai_marker_count}处",
         ]

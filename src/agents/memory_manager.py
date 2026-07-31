@@ -26,8 +26,10 @@ logger = logging.getLogger(__name__)
 # Structured output schemas
 # ============================================================
 
+
 class ChapterSummaryOutput(BaseModel):
     """LLM output for chapter summary and memory updates."""
+
     chapter_summary: str = Field(default="", description="本章摘要（200字以内）")
     timeline_events: list[TimelineEvent] = Field(default_factory=list, description="时间线事件")
     foreshadowing_updates: list[ForeshadowingEntry] = Field(
@@ -58,6 +60,7 @@ class ChapterSummaryOutput(BaseModel):
                 return []
             if stripped.startswith("[") and stripped.endswith("]"):
                 import json
+
                 try:
                     parsed = json.loads(stripped)
                     if isinstance(parsed, list):
@@ -73,6 +76,7 @@ class ChapterSummaryOutput(BaseModel):
 # ============================================================
 # Agent
 # ============================================================
+
 
 class MemoryManagerAgent(BaseAgent):
     """Manages short-term and long-term memory after each chapter is completed.
@@ -113,7 +117,7 @@ class MemoryManagerAgent(BaseAgent):
         system = self.build_system_prompt(
             role="记忆管理者",
             expertise="你是故事的忠实记录者。你精确地记录每章发生了什么、角色有什么变化、"
-                      "埋下了什么伏笔、推进了什么线索。你不会遗漏任何重要信息。",
+            "埋下了什么伏笔、推进了什么线索。你不会遗漏任何重要信息。",
         )
 
         # Build context
@@ -139,10 +143,10 @@ class MemoryManagerAgent(BaseAgent):
 【角色状态变化】
 {self._format_state_changes(draft.character_state_changes)}
 
-【上一章摘要】{prev_summary or '这是第一章'}
+【上一章摘要】{prev_summary or "这是第一章"}
 
 【活跃伏笔】
-{prev_foreshadowing or '无'}
+{prev_foreshadowing or "无"}
 
 请生成：
 
@@ -174,15 +178,9 @@ class MemoryManagerAgent(BaseAgent):
         # Short-term memory
         memory.short_term = ShortTermMemory(
             current_chapter_summary=result.chapter_summary,
-            previous_chapter_summary=(
-                memory.short_term.current_chapter_summary
-                if memory.short_term else ""
-            ),
+            previous_chapter_summary=(memory.short_term.current_chapter_summary if memory.short_term else ""),
             recent_character_states=memory.character_states if memory.character_states else {},
-            active_foreshadowing=[
-                e.id for e in result.foreshadowing_updates
-                if e.status == "active"
-            ],
+            active_foreshadowing=[e.id for e in result.foreshadowing_updates if e.status == "active"],
             unresolved_hooks=result.unresolved_issues,
         )
 
@@ -232,7 +230,4 @@ class MemoryManagerAgent(BaseAgent):
     def _format_state_changes(self, changes: list) -> str:
         if not changes:
             return "（无状态变化）"
-        return "\n".join(
-            f"- {c.character_id}: {c.attribute} ({c.old_value} → {c.new_value})"
-            for c in changes
-        )
+        return "\n".join(f"- {c.character_id}: {c.attribute} ({c.old_value} → {c.new_value})" for c in changes)

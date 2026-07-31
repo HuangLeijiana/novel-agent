@@ -24,13 +24,16 @@ logger = logging.getLogger(__name__)
 # Structured output schemas
 # ============================================================
 
+
 class CharacterProfilesOutput(BaseModel):
     """LLM output schema for character profiles."""
+
     characters: list[CharacterProfile] = Field(default_factory=list)
 
 
 class RelationshipMapOutput(BaseModel):
     """LLM output schema for relationship mapping."""
+
     relationships: dict[str, list[Relationship]] = Field(
         default_factory=dict,
         description="Mapping: character_id -> list of relationships",
@@ -39,6 +42,7 @@ class RelationshipMapOutput(BaseModel):
 
 class CharacterArcOutput(BaseModel):
     """LLM output schema for character arcs."""
+
     arcs: dict[str, list[ArcBeat]] = Field(
         default_factory=dict,
         description="Mapping: character_id -> arc beats",
@@ -48,6 +52,7 @@ class CharacterArcOutput(BaseModel):
 # ============================================================
 # Agent
 # ============================================================
+
 
 class CharacterManagerAgent(BaseAgent):
     """Creates and manages character profiles, relationships, and arcs."""
@@ -94,7 +99,7 @@ class CharacterManagerAgent(BaseAgent):
         system = self.build_system_prompt(
             role="角色设计师",
             expertise="创造立体、有深度、令人难忘的小说角色。精通角色原型（英雄、导师、"
-                      "伙伴、信使、捣蛋鬼、阴影等），能为每个角色赋予独特的声音、动机和缺陷。",
+            "伙伴、信使、捣蛋鬼、阴影等），能为每个角色赋予独特的声音、动机和缺陷。",
         )
 
         # Build context
@@ -108,7 +113,7 @@ class CharacterManagerAgent(BaseAgent):
         user = f"""请为以下小说创建角色阵容：
 
 【故事灵感】{config.inspiration}
-【题材】{', '.join(config.genre)}
+【题材】{", ".join(config.genre)}
 【世界】{world.name}（{world.world_type}）
 【主题】{theme_names}
 【核心冲突】
@@ -163,15 +168,12 @@ class CharacterManagerAgent(BaseAgent):
         """Build relationship network between all characters."""
         system = self.build_system_prompt(
             role="角色关系设计师",
-            expertise="设计复杂、真实、有张力的角色关系网络。理解权力动态、情感层次、"
-                      "信任构建和关系演变。",
+            expertise="设计复杂、真实、有张力的角色关系网络。理解权力动态、情感层次、信任构建和关系演变。",
         )
 
         char_summaries = []
         for cid, char in registry.characters.items():
-            char_summaries.append(
-                f"[{cid}] {char.name} ({char.role}) - {char.personality[:100]}"
-            )
+            char_summaries.append(f"[{cid}] {char.name} ({char.role}) - {char.personality[:100]}")
         char_list = "\n".join(char_summaries)
 
         user = f"""基于以下角色列表，为每对角色设计关系：
@@ -179,7 +181,7 @@ class CharacterManagerAgent(BaseAgent):
 【角色列表】
 {char_list}
 
-【主题】{', '.join(t.name for t in bible.themes)}
+【主题】{", ".join(t.name for t in bible.themes)}
 
 为每个角色与其他角色的关系定义：
 - relationship_type: friend/rival/lover/enemy/family/mentor/subordinate/acquaintance
@@ -217,19 +219,18 @@ class CharacterManagerAgent(BaseAgent):
         system = self.build_system_prompt(
             role="角色弧线设计师",
             expertise="为角色设计有层次的成长弧线。精通各种弧线类型（正向成长、堕落、"
-                      "救赎、幻灭等），能让角色变化既出人意料又合情合理。",
+            "救赎、幻灭等），能让角色变化既出人意料又合情合理。",
         )
 
         major_chars = {
-            cid: char for cid, char in registry.characters.items()
+            cid: char
+            for cid, char in registry.characters.items()
             if char.role in ("protagonist", "antagonist", "deuteragonist")
         }
 
         char_descriptions = []
         for cid, char in major_chars.items():
-            char_descriptions.append(
-                f"[{cid}] {char.name} - 动机: {char.motivation} - 缺陷: {char.flaw}"
-            )
+            char_descriptions.append(f"[{cid}] {char.name} - 动机: {char.motivation} - 缺陷: {char.flaw}")
         char_list = "\n".join(char_descriptions)
 
         user = f"""为主要角色设计角色弧线（变化轨迹）：

@@ -151,10 +151,7 @@ class BaseAgent(ABC):
         if result is not None:
             return result
         # Template not found — log once and use default
-        logger.debug(
-            f"No template for {self.agent_type}/{method}_{prompt_type}.j2 — "
-            f"using inline prompt"
-        )
+        logger.debug(f"No template for {self.agent_type}/{method}_{prompt_type}.j2 — using inline prompt")
         return default
 
     def has_template(self, method: str) -> bool:
@@ -166,8 +163,7 @@ class BaseAgent(ABC):
     # ================================================================
 
     @staticmethod
-    def build_system_prompt(role: str, expertise: str, constraints: str = "",
-                            inspiration: str = "") -> str:
+    def build_system_prompt(role: str, expertise: str, constraints: str = "", inspiration: str = "") -> str:
         """Build a standard system prompt for an agent.
 
         Args:

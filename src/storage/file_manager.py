@@ -214,7 +214,10 @@ class ProjectFileManager:
         filename = f"chapter_{chapter.chapter_number:03d}.md"
         path = self.root / "output" / "chapters" / filename
         MarkdownSerializer.save_chapter_markdown(
-            path, chapter.chapter_number, chapter.title, chapter.content,
+            path,
+            chapter.chapter_number,
+            chapter.title,
+            chapter.content,
         )
         return path
 
@@ -223,7 +226,10 @@ class ProjectFileManager:
         filename = f"chapter_{chapter.chapter_number:03d}.docx"
         path = self.root / "output" / "chapters" / filename
         DocxSerializer.chapter_to_docx(
-            path, chapter.chapter_number, chapter.title, chapter.content,
+            path,
+            chapter.chapter_number,
+            chapter.title,
+            chapter.content,
         )
         return path
 
@@ -318,6 +324,7 @@ class ProjectFileManager:
     def _save_long_term_events_jsonl(self, memory: MemoryState, path: Path) -> None:
         """Save timeline events as JSONL for append-friendly format."""
         from ..models.memory import TimelineEvent
+
         events = memory.timeline
         with open(path, "w", encoding="utf-8") as f:
             for event in events:

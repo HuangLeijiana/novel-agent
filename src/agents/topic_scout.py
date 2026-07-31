@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
 
 class ScanReportOutput(BaseModel):
     """LLM output for platform scan analysis."""
+
     platform: str = Field(default="", description="平台名称")
     list_name: str = Field(default="", description="榜单名称")
     date: str = Field(default="", description="扫描日期")
@@ -69,29 +70,34 @@ class ScanReportOutput(BaseModel):
 
 class CrossPlatformOutput(BaseModel):
     """LLM output for cross-platform comparison."""
+
     entries: list[CrossPlatformEntry] = Field(default_factory=list)
     selected_directions: list[str] = Field(default_factory=list)
 
 
 class BenchmarkOutput(BaseModel):
     """LLM output for benchmark skeleton analysis."""
+
     entries: list[BenchmarkSkeleton] = Field(default_factory=list)
     structural_summary: str = Field(default="")
 
 
 class CandidateTopicsListOutput(BaseModel):
     """LLM output for 12 candidate topics."""
+
     topics: list[CandidateTopic] = Field(default_factory=list)
 
 
 class TopicScoresOutput(BaseModel):
     """LLM output for topic scoring."""
+
     scores: list[TopicScoreCard] = Field(default_factory=list)
     top_4: list[str] = Field(default_factory=list)
 
 
 class TitleSynopsisListOutput(BaseModel):
     """LLM output for title/synopsis generation."""
+
     genre_name: str = Field(default="")
     title_candidates: list[TitleSynopsisPair] = Field(default_factory=list)
     final_title: str = Field(default="")
@@ -100,6 +106,7 @@ class TitleSynopsisListOutput(BaseModel):
 
 class MiniArcOutlineOutput(BaseModel):
     """LLM output for 10-chapter mini-arc outline."""
+
     genre_name: str = Field(default="")
     total_words: str = Field(default="20,000-21,000")
     chapters: list[MiniArcChapter] = Field(default_factory=list)
@@ -134,9 +141,7 @@ class TopicScoutAgent(BaseAgent):
     # Step 1A: 飞卢真实扫榜
     # ================================================================
 
-    async def scan_platform(
-        self, platform: str, page_content: Optional[str] = None
-    ) -> ScanReport:
+    async def scan_platform(self, platform: str, page_content: Optional[str] = None) -> ScanReport:
         """Scan a real platform rankings page and extract structured data.
 
         Tries structured generation first, falls back to plain-text generation
@@ -216,31 +221,37 @@ class TopicScoutAgent(BaseAgent):
                     summary=result.summary,
                     scan_failed=False,
                 )
-            logger.warning(f"{platform} structured scan returned only {len(result.entries or [])} entries → falling back to text")
+            logger.warning(
+                f"{platform} structured scan returned only {len(result.entries or [])} entries → falling back to text"
+            )
         except Exception as e:
             logger.warning(f"{platform} structured scan failed: {e} → falling back to text")
 
         # Attempt 2: plain-text generation + regex parsing
         logger.info(f"{platform}: falling back to text-based scan")
         try:
-            text_prompt = user_prompt + """
+            text_prompt = (
+                user_prompt
+                + """
 
 请用以下纯文本格式逐本输出（每本书一行）：
 #排名 | 书名 | 题材标签 | 书名吸睛点 | 一句话卖点 | 金手指 | 开篇压力 | 爽点模式
 
 然后在最后用"=== 趋势总结 ==="开头，写2-4句趋势总结。
 """
+            )
             text_result = await self.generate(
                 system_prompt=system_prompt,
                 user_prompt=text_prompt,
                 temperature_override=0.3,
             )
-            text = text_result.content if hasattr(text_result, 'content') else str(text_result)
+            text = text_result.content if hasattr(text_result, "content") else str(text_result)
             entries = self._parse_text_scan_entries(text)
 
             if entries:
                 import re
-                summary_match = re.search(r'===?\s*趋势总结\s*===?\s*\n(.+)', text, re.DOTALL)
+
+                summary_match = re.search(r"===?\s*趋势总结\s*===?\s*\n(.+)", text, re.DOTALL)
                 summary = summary_match.group(1).strip()[:200] if summary_match else f"{platform}榜单分析完成"
                 logger.info(f"{platform} text fallback: parsed {len(entries)} entries")
                 return ScanReport(
@@ -263,29 +274,32 @@ class TopicScoutAgent(BaseAgent):
         Expected format: #N | title | genre | title_appeal | one_liner | golden_finger | opening_pressure | pleasure_loop
         """
         import re
+
         entries = []
-        for line in text.split('\n'):
+        for line in text.split("\n"):
             line = line.strip()
-            if not line.startswith('#'):
+            if not line.startswith("#"):
                 continue
-            parts = [p.strip() for p in line.split('|')]
+            parts = [p.strip() for p in line.split("|")]
             if len(parts) < 3:
                 continue
             try:
-                rank = int(parts[0].lstrip('#').strip())
+                rank = int(parts[0].lstrip("#").strip())
             except ValueError:
                 continue
 
-            entries.append(ScanEntry(
-                rank=rank,
-                title=parts[1] if len(parts) > 1 else "",
-                genre=parts[2] if len(parts) > 2 else "",
-                title_appeal=parts[3] if len(parts) > 3 else "",
-                one_liner=parts[4] if len(parts) > 4 else "",
-                golden_finger=parts[5] if len(parts) > 5 else "",
-                opening_pressure=parts[6] if len(parts) > 6 else "",
-                pleasure_loop=parts[7] if len(parts) > 7 else "",
-            ))
+            entries.append(
+                ScanEntry(
+                    rank=rank,
+                    title=parts[1] if len(parts) > 1 else "",
+                    genre=parts[2] if len(parts) > 2 else "",
+                    title_appeal=parts[3] if len(parts) > 3 else "",
+                    one_liner=parts[4] if len(parts) > 4 else "",
+                    golden_finger=parts[5] if len(parts) > 5 else "",
+                    opening_pressure=parts[6] if len(parts) > 6 else "",
+                    pleasure_loop=parts[7] if len(parts) > 7 else "",
+                )
+            )
         return entries
 
     async def scan_feilu(self, page_content: Optional[str] = None) -> ScanReport:
@@ -357,8 +371,7 @@ class TopicScoutAgent(BaseAgent):
         )
 
         book_list = "\n".join(
-            f"#{e.rank} 《{e.title}》" + (f" — {e.one_liner[:80]}" if e.one_liner else "")
-            for e in direct_entries[:15]
+            f"#{e.rank} 《{e.title}》" + (f" — {e.one_liner[:80]}" if e.one_liner else "") for e in direct_entries[:15]
         )
 
         user_prompt = f"""请分析以下番茄小说榜单，为每本书标注题材和核心设定，并总结趋势。
@@ -385,26 +398,27 @@ class TopicScoutAgent(BaseAgent):
                 user_prompt=user_prompt,
                 temperature_override=0.4,
             )
-            text = result.content if hasattr(result, 'content') else str(result)
+            text = result.content if hasattr(result, "content") else str(result)
 
             # Parse trend summary
             import re
-            summary_match = re.search(r'===?\s*趋势总结\s*===?\s*\n(.+?)(?:\n===|\n\n===|\Z)', text, re.DOTALL)
+
+            summary_match = re.search(r"===?\s*趋势总结\s*===?\s*\n(.+?)(?:\n===|\n\n===|\Z)", text, re.DOTALL)
             summary = summary_match.group(1).strip() if summary_match else ""
 
             # Parse per-book analysis
             enriched = []
-            for line in text.split('\n'):
+            for line in text.split("\n"):
                 line = line.strip()
-                if not line.startswith('#'):
+                if not line.startswith("#"):
                     continue
                 # Format: #N | genre | title_appeal | golden_finger | opening_pressure | pleasure_loop
-                parts = [p.strip() for p in line.split('|')]
+                parts = [p.strip() for p in line.split("|")]
                 if len(parts) < 3:
                     continue
 
                 try:
-                    rank = int(parts[0].lstrip('#').strip())
+                    rank = int(parts[0].lstrip("#").strip())
                 except ValueError:
                     continue
 
@@ -412,16 +426,18 @@ class TopicScoutAgent(BaseAgent):
                 direct = next((d for d in direct_entries if d.rank == rank), None)
                 title = direct.title if direct else parts[0]
 
-                enriched.append(ScanEntry(
-                    rank=rank,
-                    title=title,
-                    genre=parts[1] if len(parts) > 1 else "",
-                    title_appeal=parts[2] if len(parts) > 2 else "",
-                    golden_finger=parts[3] if len(parts) > 3 else "",
-                    opening_pressure=parts[4] if len(parts) > 4 else "",
-                    pleasure_loop=parts[5] if len(parts) > 5 else "",
-                    one_liner=direct.one_liner if direct else "",
-                ))
+                enriched.append(
+                    ScanEntry(
+                        rank=rank,
+                        title=title,
+                        genre=parts[1] if len(parts) > 1 else "",
+                        title_appeal=parts[2] if len(parts) > 2 else "",
+                        golden_finger=parts[3] if len(parts) > 3 else "",
+                        opening_pressure=parts[4] if len(parts) > 4 else "",
+                        pleasure_loop=parts[5] if len(parts) > 5 else "",
+                        one_liner=direct.one_liner if direct else "",
+                    )
+                )
 
             if enriched:
                 return enriched, summary
@@ -449,7 +465,7 @@ class TopicScoutAgent(BaseAgent):
         entries = []
         # Split into entry blocks: each starts with #N pattern
         # Remove the header line
-        lines = text.strip().split('\n')
+        lines = text.strip().split("\n")
 
         # Collect entry blocks
         current_block = []
@@ -457,7 +473,7 @@ class TopicScoutAgent(BaseAgent):
             # Strip whitespace but preserve the content
             stripped = line.strip()
             # Detect start of a new entry: #N 《 or #N（
-            if re.match(r'^#\d+\s*[《（]', stripped):
+            if re.match(r"^#\d+\s*[《（]", stripped):
                 if current_block:
                     entry = TopicScoutAgent._parse_one_fanqie_block(current_block)
                     if entry:
@@ -484,22 +500,22 @@ class TopicScoutAgent(BaseAgent):
 
         first_line = lines[0]
         # Extract rank: #1, #2, etc.
-        rank_match = re.match(r'^#(\d+)', first_line)
+        rank_match = re.match(r"^#(\d+)", first_line)
         rank = int(rank_match.group(1)) if rank_match else 0
 
         # Extract title from 《...》
-        title_match = re.search(r'《(.+?)》', first_line)
+        title_match = re.search(r"《(.+?)》", first_line)
         title = title_match.group(1).strip() if title_match else ""
 
         # Extract author from 作者：...
-        author_match = re.search(r'作者[：:]\s*(.+?)$', first_line)
+        author_match = re.search(r"作者[：:]\s*(.+?)$", first_line)
         author = author_match.group(1).strip() if author_match else ""
 
         # Extract abstract from subsequent lines
         abstract = ""
         for line in lines[1:]:
             # Remove 简介：prefix
-            clean = re.sub(r'^简介[：:]\s*', '', line)
+            clean = re.sub(r"^简介[：:]\s*", "", line)
             if clean:
                 abstract += clean
 
@@ -596,21 +612,25 @@ class TopicScoutAgent(BaseAgent):
 
         # Attempt 2: plain-text generation + regex parsing
         try:
-            text_prompt = user_prompt + """
+            text_prompt = (
+                user_prompt
+                + """
 
 请用以下格式输出推荐的创作方向（每行一个）：
 推荐方向：题材名1
 推荐方向：题材名2
 推荐方向：题材名3
 """
+            )
             text_result = await self.generate(
                 system_prompt=system_prompt,
                 user_prompt=text_prompt,
                 temperature_override=0.5,
             )
-            text = text_result.content if hasattr(text_result, 'content') else str(text_result)
+            text = text_result.content if hasattr(text_result, "content") else str(text_result)
             import re
-            directions = re.findall(r'推荐方向[：:]\s*(.+?)(?:\n|$)', text)
+
+            directions = re.findall(r"推荐方向[：:]\s*(.+?)(?:\n|$)", text)
             directions = [d.strip() for d in directions if d.strip()]
             if directions:
                 logger.info(f"Cross-platform text fallback: {len(directions)} directions")
@@ -673,7 +693,7 @@ class TopicScoutAgent(BaseAgent):
         user_prompt = f"""请从以下保留的题材方向里，每个方向选2本最有代表性的对标书，总共拆6-10本。
 
 【保留的题材方向】
-{chr(10).join(f'- {d}' for d in directions)}
+{chr(10).join(f"- {d}" for d in directions)}
 {context}
 
 注意：不是复述正文，不是抄内容，而是拆骨架。请按以下字段输出每本书：
@@ -752,7 +772,10 @@ class TopicScoutAgent(BaseAgent):
         # Generate in 3 batches of 4 to reduce per-call complexity
         for batch_idx in range(3):
             batch_num = batch_idx + 1
-            batch_prompt = base_prompt + f"\n\n请生成第{batch_num}批，恰好4个候选题材（题材{batch_idx*4+1}-{batch_idx*4+4}）。"
+            batch_prompt = (
+                base_prompt
+                + f"\n\n请生成第{batch_num}批，恰好4个候选题材（题材{batch_idx * 4 + 1}-{batch_idx * 4 + 4}）。"
+            )
 
             batch_topics = await self._generate_topic_batch(
                 system_prompt=system_prompt,
@@ -765,9 +788,7 @@ class TopicScoutAgent(BaseAgent):
         logger.info(f"Total topics generated: {len(all_topics)} across 3 batches")
         return CandidateTopicsOutput(topics=all_topics)
 
-    async def _generate_topic_batch(
-        self, system_prompt: str, user_prompt: str, batch_num: int
-    ) -> list[CandidateTopic]:
+    async def _generate_topic_batch(self, system_prompt: str, user_prompt: str, batch_num: int) -> list[CandidateTopic]:
         """Generate one batch of topics. Falls back to text parsing if structured fails."""
         import re
 
@@ -788,7 +809,8 @@ class TopicScoutAgent(BaseAgent):
         logger.info(f"Batch {batch_num}: falling back to text-based generation")
         try:
             text_result = await self.generate(
-                system_prompt=system_prompt + "\n\n请以markdown格式输出，每个题材用## 标题分隔，字段用- 字段名: 值的形式列出。",
+                system_prompt=system_prompt
+                + "\n\n请以markdown格式输出，每个题材用## 标题分隔，字段用- 字段名: 值的形式列出。",
                 user_prompt=user_prompt,
                 temperature_override=0.8,
             )
@@ -807,7 +829,7 @@ class TopicScoutAgent(BaseAgent):
 
         topics = []
         # Split by ## heading or numbered entries
-        blocks = re.split(r'\n(?=## |\d+[\.\)]\s*)', text)
+        blocks = re.split(r"\n(?=## |\d+[\.\)]\s*)", text)
 
         for block in blocks:
             block = block.strip()
@@ -819,27 +841,29 @@ class TopicScoutAgent(BaseAgent):
                 m = re.search(pattern, block, re.IGNORECASE)
                 return m.group(1).strip() if m else default
 
-            genre = _field(r'(?:题材名|genre_name)[：:]\s*(.+)', "")
+            genre = _field(r"(?:题材名|genre_name)[：:]\s*(.+)", "")
             if not genre:
                 # Try to get from heading
-                m = re.match(r'##\s*(.+)', block)
+                m = re.match(r"##\s*(.+)", block)
                 if m:
                     genre = m.group(1).strip()
 
             if not genre:
                 continue
 
-            topics.append(CandidateTopic(
-                genre_name=genre,
-                one_line_setting=_field(r'(?:一句话设定|one_line_setting)[：:]\s*(.+)'),
-                golden_finger=_field(r'(?:核心金手指|golden_finger)[：:]\s*(.+)'),
-                chapter1_conflict=_field(r'(?:第一章冲突|chapter1_conflict)[：:]\s*(.+)'),
-                first_event_direction=_field(r'(?:首个小事件闭环方向|first_event_direction)[：:]\s*(.+)'),
-                first_pleasure_wave=_field(r'(?:第一波爽点|first_pleasure_wave)[：:]\s*(.+)'),
-                tomato_fit=_field(r'(?:番茄适配度|tomato_fit)[：:]\s*(.+)', "medium"),
-                video_potential=_field(r'(?:视频表现力|video_potential)[：:]\s*(.+)', "medium"),
-                risk=_field(r'(?:风险点|risk)[：:]\s*(.+)'),
-            ))
+            topics.append(
+                CandidateTopic(
+                    genre_name=genre,
+                    one_line_setting=_field(r"(?:一句话设定|one_line_setting)[：:]\s*(.+)"),
+                    golden_finger=_field(r"(?:核心金手指|golden_finger)[：:]\s*(.+)"),
+                    chapter1_conflict=_field(r"(?:第一章冲突|chapter1_conflict)[：:]\s*(.+)"),
+                    first_event_direction=_field(r"(?:首个小事件闭环方向|first_event_direction)[：:]\s*(.+)"),
+                    first_pleasure_wave=_field(r"(?:第一波爽点|first_pleasure_wave)[：:]\s*(.+)"),
+                    tomato_fit=_field(r"(?:番茄适配度|tomato_fit)[：:]\s*(.+)", "medium"),
+                    video_potential=_field(r"(?:视频表现力|video_potential)[：:]\s*(.+)", "medium"),
+                    risk=_field(r"(?:风险点|risk)[：:]\s*(.+)"),
+                )
+            )
 
         return topics
 
@@ -847,9 +871,7 @@ class TopicScoutAgent(BaseAgent):
     # Step 3B: 评分收缩
     # ================================================================
 
-    async def score_topics(
-        self, candidates: CandidateTopicsOutput
-    ) -> TopicScoringReport:
+    async def score_topics(self, candidates: CandidateTopicsOutput) -> TopicScoringReport:
         """Step 3B: Score 12 candidates across 8 dimensions, recommend top 4.
 
         Does NOT make the final decision — outputs a score table and
@@ -901,15 +923,20 @@ class TopicScoutAgent(BaseAgent):
                     scores=[TopicScoreCard(**s.model_dump()) for s in result.scores] if result.scores else [],
                     top_4=result.top_4,
                 )
-            logger.warning(f"Topic scoring structured: only {len(result.top_4 or [])} top entries → falling back to text")
+            logger.warning(
+                f"Topic scoring structured: only {len(result.top_4 or [])} top entries → falling back to text"
+            )
         except Exception as e:
             logger.warning(f"Topic scoring structured generation failed: {e} → falling back to text")
 
         # Attempt 2: plain-text generation + regex parsing
         logger.info("Topic scoring: falling back to text-based generation")
         import re
+
         try:
-            text_prompt = user_prompt + """
+            text_prompt = (
+                user_prompt
+                + """
 
 请用以下格式输出结果：
 
@@ -922,24 +949,25 @@ class TopicScoutAgent(BaseAgent):
 评分表：
 #排名 | 题材名 | 书名吸量 | 开篇压力 | 事件闭环 | 金手指续航 | 番茄适配 | AI稳定 | 视频表现 | 崩设定风险 | 综合得分
 """
+            )
             text_result = await self.generate(
                 system_prompt=system_prompt,
                 user_prompt=text_prompt,
                 temperature_override=0.3,
             )
-            text = text_result.content if hasattr(text_result, 'content') else str(text_result)
+            text = text_result.content if hasattr(text_result, "content") else str(text_result)
 
             # Parse top 4 from text
             top_4 = []
-            top_match = re.search(r'推荐前4名[：:]?\s*\n(.+?)(?:\n\n|\n(?!\d+\.|\s*\d+\s))', text, re.DOTALL)
+            top_match = re.search(r"推荐前4名[：:]?\s*\n(.+?)(?:\n\n|\n(?!\d+\.|\s*\d+\s))", text, re.DOTALL)
             if top_match:
-                top_4 = re.findall(r'\d+\.\s*(.+?)(?:\n|$)', top_match.group(1))
+                top_4 = re.findall(r"\d+\.\s*(.+?)(?:\n|$)", top_match.group(1))
                 top_4 = [t.strip() for t in top_4 if t.strip()]
             if not top_4:
                 # Try alternative formats
-                top_4 = re.findall(r'(?:top|推荐)[\s_]*(?:4|四)[：:]\s*(.+?)(?:\n|$)', text, re.IGNORECASE)
+                top_4 = re.findall(r"(?:top|推荐)[\s_]*(?:4|四)[：:]\s*(.+?)(?:\n|$)", text, re.IGNORECASE)
                 if top_4:
-                    top_4 = [t.strip() for t in re.split(r'[,，、]', top_4[0]) if t.strip()]
+                    top_4 = [t.strip() for t in re.split(r"[,，、]", top_4[0]) if t.strip()]
 
             if top_4:
                 logger.info(f"Topic scoring text fallback: top_4={top_4}")
@@ -960,9 +988,7 @@ class TopicScoutAgent(BaseAgent):
     # Step 4A: 书名与简介前置测试
     # ================================================================
 
-    async def generate_titles(
-        self, genre_name: str, topic: CandidateTopic
-    ) -> TitleSynopsisReport:
+    async def generate_titles(self, genre_name: str, topic: CandidateTopic) -> TitleSynopsisReport:
         """Step 4A: Generate title + synopsis for one topic.
 
         Uses plain-text generation with regex parsing (not structured output)
@@ -1004,9 +1030,9 @@ class TopicScoutAgent(BaseAgent):
             if result.final_title and result.final_synopsis:
                 return TitleSynopsisReport(
                     genre_name=result.genre_name or genre_name,
-                    title_candidates=[
-                        TitleSynopsisPair(**t.model_dump()) for t in result.title_candidates
-                    ] if result.title_candidates else [],
+                    title_candidates=[TitleSynopsisPair(**t.model_dump()) for t in result.title_candidates]
+                    if result.title_candidates
+                    else [],
                     final_title=result.final_title,
                     final_synopsis=result.final_synopsis,
                 )
@@ -1021,27 +1047,27 @@ class TopicScoutAgent(BaseAgent):
                 user_prompt=user_prompt,
                 temperature_override=0.8,
             )
-            text = text_result.content if hasattr(text_result, 'content') else str(text_result)
+            text = text_result.content if hasattr(text_result, "content") else str(text_result)
             import re
 
             # Parse: 最终书名：《XXX》 or 书名：XXX
-            title_match = re.search(r'(?:最终)?书名[：:]\s*[《]?(.+?)[》]?(?:\n|$)', text)
+            title_match = re.search(r"(?:最终)?书名[：:]\s*[《]?(.+?)[》]?(?:\n|$)", text)
             final_title = title_match.group(1).strip() if title_match else ""
 
             # Parse: 简介：XXX
-            syn_match = re.search(r'简介[：:]\s*(.+?)(?:\n\n|\Z)', text, re.DOTALL)
+            syn_match = re.search(r"简介[：:]\s*(.+?)(?:\n\n|\Z)", text, re.DOTALL)
             final_synopsis = syn_match.group(1).strip() if syn_match else ""
 
             # Fallback: use first line as title if no match
             if not final_title:
-                lines = [l.strip() for l in text.split('\n') if l.strip() and not l.startswith('#')]
+                lines = [l.strip() for l in text.split("\n") if l.strip() and not l.startswith("#")]
                 if lines:
                     # Clean up common artifacts
-                    first = re.sub(r'^[《「]|[》」]$', '', lines[0]).strip()
+                    first = re.sub(r"^[《「]|[》」]$", "", lines[0]).strip()
                     if len(first) >= 4:
                         final_title = first[:50]
                     if len(lines) >= 2:
-                        final_synopsis = ' '.join(lines[1:3])[:300]
+                        final_synopsis = " ".join(lines[1:3])[:300]
 
             if final_title:
                 logger.info(f"Title text fallback: '{final_title}' for '{genre_name}'")
@@ -1145,16 +1171,22 @@ class TopicScoutAgent(BaseAgent):
                         arc_goal=result.arc_goal,
                         next_arc_hook=result.next_arc_hook,
                     )
-                logger.warning(f"Mini-arc structured: {len(result.chapters)} chapters but only {filled} have content → falling back to text")
+                logger.warning(
+                    f"Mini-arc structured: {len(result.chapters)} chapters but only {filled} have content → falling back to text"
+                )
             else:
-                logger.warning(f"Mini-arc structured: only {len(result.chapters or [])} chapters → falling back to text")
+                logger.warning(
+                    f"Mini-arc structured: only {len(result.chapters or [])} chapters → falling back to text"
+                )
         except Exception as e:
             logger.warning(f"Mini-arc structured generation failed: {e} → falling back to text")
 
         # Attempt 2: plain-text generation + regex parsing
         logger.info(f"Mini-arc for '{genre_name}': falling back to text-based generation")
         try:
-            text_prompt = user_prompt + """
+            text_prompt = (
+                user_prompt
+                + """
 
 请用以下纯文本格式输出每章（必须输出全部10章）：
 
@@ -1175,12 +1207,13 @@ class TopicScoutAgent(BaseAgent):
 弧目标：...
 下一弧钩子：...
 """
+            )
             text_result = await self.generate(
                 system_prompt=system_prompt,
                 user_prompt=text_prompt,
                 temperature_override=0.6,
             )
-            text = text_result.content if hasattr(text_result, 'content') else str(text_result)
+            text = text_result.content if hasattr(text_result, "content") else str(text_result)
             chapters, arc_goal, next_hook = self._parse_text_mini_arc(text)
 
             if chapters and len(chapters) >= 5:
@@ -1213,18 +1246,19 @@ class TopicScoutAgent(BaseAgent):
         chapters = []
         # Split by any chapter marker: === 第N章 ===, ## 第N章, 第N章, N.
         chapter_blocks = re.split(
-            r'\n(?=(?:===?\s*)?第\s*\d+\s*章|^\d+[\.\)、])',
-            text, flags=re.MULTILINE,
+            r"\n(?=(?:===?\s*)?第\s*\d+\s*章|^\d+[\.\)、])",
+            text,
+            flags=re.MULTILINE,
         )
         # Also try splitting by double-newline if the above yields too few blocks
         if len(chapter_blocks) < 5:
-            chapter_blocks = re.split(r'\n\s*\n(?=第)', text)
+            chapter_blocks = re.split(r"\n\s*\n(?=第)", text)
 
         for block in chapter_blocks:
-            match = re.search(r'第\s*(\d+)\s*章', block)
+            match = re.search(r"第\s*(\d+)\s*章", block)
             if not match:
                 # Try numbered format: "1." or "1、"
-                match = re.search(r'(?:^|\n)\s*(\d+)\s*[\.\)、]', block)
+                match = re.search(r"(?:^|\n)\s*(\d+)\s*[\.\)、]", block)
             if not match:
                 continue
             ch_num = int(match.group(1))
@@ -1238,38 +1272,40 @@ class TopicScoutAgent(BaseAgent):
                         return m.group(1).strip()
                 return default
 
-            chapters.append(MiniArcChapter(
-                chapter_number=ch_num,
-                goal=_f(
-                    r'(?:本章)?目标[：:]\s*(.+?)(?:\n|$)',
-                    r'目标[：:]\s*(.+?)(?:\n|$)',
-                ),
-                conflict=_f(
-                    r'(?:本章)?冲突[：:]\s*(.+?)(?:\n|$)',
-                    r'冲突[：:]\s*(.+?)(?:\n|$)',
-                    r'矛盾[：:]\s*(.+?)(?:\n|$)',
-                ),
-                pleasure_point=_f(
-                    r'(?:本章)?爽点[：:]\s*(.+?)(?:\n|$)',
-                    r'爽点[：:]\s*(.+?)(?:\n|$)',
-                ),
-                new_info=_f(
-                    r'新增?信息[：:]\s*(.+?)(?:\n|$)',
-                    r'新信息[：:]\s*(.+?)(?:\n|$)',
-                ),
-                character_change=_f(
-                    r'人物[状变][态化][：:]\s*(.+?)(?:\n|$)',
-                    r'人物变化[：:]\s*(.+?)(?:\n|$)',
-                ),
-                foreshadowing=_f(
-                    r'伏笔[推进][进前][：:]\s*(.+?)(?:\n|$)',
-                    r'伏笔[：:]\s*(.+?)(?:\n|$)',
-                ),
-                ending_hook=_f(
-                    r'(?:结尾)?钩子[：:]\s*(.+?)(?:\n|$)',
-                    r'钩子[：:]\s*(.+?)(?:\n|$)',
-                ),
-            ))
+            chapters.append(
+                MiniArcChapter(
+                    chapter_number=ch_num,
+                    goal=_f(
+                        r"(?:本章)?目标[：:]\s*(.+?)(?:\n|$)",
+                        r"目标[：:]\s*(.+?)(?:\n|$)",
+                    ),
+                    conflict=_f(
+                        r"(?:本章)?冲突[：:]\s*(.+?)(?:\n|$)",
+                        r"冲突[：:]\s*(.+?)(?:\n|$)",
+                        r"矛盾[：:]\s*(.+?)(?:\n|$)",
+                    ),
+                    pleasure_point=_f(
+                        r"(?:本章)?爽点[：:]\s*(.+?)(?:\n|$)",
+                        r"爽点[：:]\s*(.+?)(?:\n|$)",
+                    ),
+                    new_info=_f(
+                        r"新增?信息[：:]\s*(.+?)(?:\n|$)",
+                        r"新信息[：:]\s*(.+?)(?:\n|$)",
+                    ),
+                    character_change=_f(
+                        r"人物[状变][态化][：:]\s*(.+?)(?:\n|$)",
+                        r"人物变化[：:]\s*(.+?)(?:\n|$)",
+                    ),
+                    foreshadowing=_f(
+                        r"伏笔[推进][进前][：:]\s*(.+?)(?:\n|$)",
+                        r"伏笔[：:]\s*(.+?)(?:\n|$)",
+                    ),
+                    ending_hook=_f(
+                        r"(?:结尾)?钩子[：:]\s*(.+?)(?:\n|$)",
+                        r"钩子[：:]\s*(.+?)(?:\n|$)",
+                    ),
+                )
+            )
 
         chapters.sort(key=lambda c: c.chapter_number)
 
@@ -1278,30 +1314,32 @@ class TopicScoutAgent(BaseAgent):
         next_hook = ""
         # Try to find summary section with various markers
         summary_match = re.search(
-            r'(?:===?\s*)?闭环总结\s*(?:===?\s*)?\n?(.+?)(?:\Z)',
-            text, re.DOTALL,
+            r"(?:===?\s*)?闭环总结\s*(?:===?\s*)?\n?(.+?)(?:\Z)",
+            text,
+            re.DOTALL,
         )
         if not summary_match:
             # Also try "总结" or "Summary" section
             summary_match = re.search(
-                r'(?:===?\s*)?(?:总结|Summary|概要)\s*(?:===?\s*)?\n?(.+?)(?:\Z)',
-                text, re.DOTALL,
+                r"(?:===?\s*)?(?:总结|Summary|概要)\s*(?:===?\s*)?\n?(.+?)(?:\Z)",
+                text,
+                re.DOTALL,
             )
         if summary_match:
             summary = summary_match.group(1)
-            m = re.search(r'弧目标[：:]\s*(.+?)(?:\n|$)', summary)
+            m = re.search(r"弧目标[：:]\s*(.+?)(?:\n|$)", summary)
             if m:
                 arc_goal = m.group(1).strip()
-            m = re.search(r'(?:下一弧)?钩子[：:]\s*(.+?)(?:\n|$)', summary)
+            m = re.search(r"(?:下一弧)?钩子[：:]\s*(.+?)(?:\n|$)", summary)
             if m:
                 next_hook = m.group(1).strip()
         # Fallback: search for arc_goal/next_hook anywhere in text
         if not arc_goal:
-            m = re.search(r'弧目标[：:]\s*(.+?)(?:\n|$)', text)
+            m = re.search(r"弧目标[：:]\s*(.+?)(?:\n|$)", text)
             if m:
                 arc_goal = m.group(1).strip()
         if not next_hook:
-            m = re.search(r'(?:下一弧)?钩子[：:]\s*(.+?)(?:\n|$)', text)
+            m = re.search(r"(?:下一弧)?钩子[：:]\s*(.+?)(?:\n|$)", text)
             if m:
                 next_hook = m.group(1).strip()
 
@@ -1325,8 +1363,7 @@ class TopicScoutAgent(BaseAgent):
         ]
         for e in report.entries:
             lines.append(
-                f"#{e.rank} {e.title} | 题材：{e.genre} | "
-                f"金手指：{e.golden_finger} | 爽点循环：{e.pleasure_loop}"
+                f"#{e.rank} {e.title} | 题材：{e.genre} | 金手指：{e.golden_finger} | 爽点循环：{e.pleasure_loop}"
             )
         lines.append(f"\n趋势总结：{report.summary}")
         return "\n".join(lines)
@@ -1489,16 +1526,18 @@ def _build_deterministic_mini_arc(
 
     chapters = []
     for i, tmpl in enumerate(chapter_template, 1):
-        chapters.append(MiniArcChapter(
-            chapter_number=i,
-            goal=tmpl["goal"],
-            conflict=tmpl["conflict"],
-            pleasure_point=tmpl["pleasure_point"],
-            new_info=tmpl["new_info"],
-            character_change=tmpl["character_change"],
-            foreshadowing=tmpl["foreshadowing"],
-            ending_hook=tmpl["ending_hook"],
-        ))
+        chapters.append(
+            MiniArcChapter(
+                chapter_number=i,
+                goal=tmpl["goal"],
+                conflict=tmpl["conflict"],
+                pleasure_point=tmpl["pleasure_point"],
+                new_info=tmpl["new_info"],
+                character_change=tmpl["character_change"],
+                foreshadowing=tmpl["foreshadowing"],
+                ending_hook=tmpl["ending_hook"],
+            )
+        )
 
     return MiniArcOutline(
         genre_name=genre_name,

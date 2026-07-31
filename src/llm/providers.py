@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 # Shared helpers for structured output
 # ============================================================
 
+
 def _extract_json(text: str) -> str:
     """Extract JSON from text that may have markdown code fences or // comments."""
     text = text.strip()
@@ -38,13 +39,13 @@ def _extract_json(text: str) -> str:
             if escaped:
                 escaped = False
                 continue
-            if ch == '\\':
+            if ch == "\\":
                 escaped = True
                 continue
             if ch == '"':
                 in_string = not in_string
                 continue
-            if not in_string and ch == '/' and i + 1 < len(line) and line[i + 1] == '/':
+            if not in_string and ch == "/" and i + 1 < len(line) and line[i + 1] == "/":
                 # Found // outside a string — rest of line is a comment
                 line = line[:i].rstrip()
                 break
@@ -75,10 +76,7 @@ def _translate_keys(data: dict, cn_to_en: dict[str, str]) -> dict:
         if isinstance(value, dict):
             value = _translate_keys(value, cn_to_en)
         elif isinstance(value, list):
-            value = [
-                _translate_keys(item, cn_to_en) if isinstance(item, dict) else item
-                for item in value
-            ]
+            value = [_translate_keys(item, cn_to_en) if isinstance(item, dict) else item for item in value]
         result[en_key] = value
     return result
 
@@ -103,13 +101,9 @@ def _coerce_field_types(data: dict, response_model: type[BaseModel]) -> dict:
         args = getattr(ann, "__args__", ())
 
         # Field expects plain str → just the class itself
-        wants_str = (ann is str)
+        wants_str = ann is str
         # Field expects Optional[str] = Union[str, NoneType]
-        wants_optional_str = (
-            origin is not None
-            and str in args
-            and type(None) in args
-        )
+        wants_optional_str = origin is not None and str in args and type(None) in args
         if (wants_str or wants_optional_str) and isinstance(value, (dict, list)):
             data[name] = json.dumps(value, ensure_ascii=False)
             continue
@@ -219,15 +213,17 @@ def _build_chinese_schema_prompt(response_model: type[BaseModel]) -> str:
         comma = ","
         lines.append(f'  "{name}": {sample}{comma}  # {desc}{required_note}')
 
-    lines.extend([
-        "}",
-        "```",
-        "",
-        "**重要提醒**：",
-        "- JSON 的 key 必须使用英文（如上面的 name, world_type），绝对不能使用中文作为 key",
-        "- 值的内容用中文",
-        "- 不要在上面的 JSON 中添加注释（// 或 # 等），输出必须是纯 JSON",
-    ])
+    lines.extend(
+        [
+            "}",
+            "```",
+            "",
+            "**重要提醒**：",
+            "- JSON 的 key 必须使用英文（如上面的 name, world_type），绝对不能使用中文作为 key",
+            "- 值的内容用中文",
+            "- 不要在上面的 JSON 中添加注释（// 或 # 等），输出必须是纯 JSON",
+        ]
+    )
 
     return "\n".join(lines)
 
@@ -241,9 +237,7 @@ class AnthropicProvider(BaseLLMProvider):
         try:
             from anthropic import AsyncAnthropic
         except ImportError:
-            raise ImportError(
-                "anthropic package is required. Install with: pip install anthropic"
-            )
+            raise ImportError("anthropic package is required. Install with: pip install anthropic")
         self.client = AsyncAnthropic(api_key=api_key)
 
     async def generate(
@@ -337,9 +331,7 @@ class OpenAIProvider(BaseLLMProvider):
         try:
             from openai import AsyncOpenAI
         except ImportError:
-            raise ImportError(
-                "openai package is required. Install with: pip install openai"
-            )
+            raise ImportError("openai package is required. Install with: pip install openai")
         kwargs = {"api_key": api_key}
         if base_url:
             kwargs["base_url"] = base_url
@@ -386,9 +378,7 @@ class OpenAIProvider(BaseLLMProvider):
                 sys_prompt += "\n\n" + _build_chinese_schema_prompt(response_format)
             else:
                 # Real OpenAI or OpenRouter — these support json_object mode
-                schema_json = json.dumps(
-                    response_format.model_json_schema(), ensure_ascii=False, indent=2
-                )
+                schema_json = json.dumps(response_format.model_json_schema(), ensure_ascii=False, indent=2)
                 sys_prompt += (
                     f"\n\nYou MUST respond with valid JSON matching this schema exactly. "
                     f"Do not include any text outside the JSON object:\n{schema_json}"
@@ -457,6 +447,7 @@ class OpenAIProvider(BaseLLMProvider):
         # Layer 2: try Chinese→English key translation
         try:
             from .scheduler import _try_parse_json
+
             data = _try_parse_json(response.content)
             cn_to_en = _build_field_map(response_model)
 

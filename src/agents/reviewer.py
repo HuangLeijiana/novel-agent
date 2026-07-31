@@ -33,12 +33,14 @@ logger = logging.getLogger(__name__)
 # Structured output schemas
 # ============================================================
 
+
 class AdversarialReviewOutput(BaseModel):
     """Structured output from the adversarial reviewer.
 
     More detailed than the standard ReviewOutput — designed to catch issues
     that a same-context reviewer would miss.
     """
+
     overall_score: float = Field(default=7.0, ge=0.0, le=10.0)
     dimension_scores: dict[str, float] = Field(default_factory=dict)
     issues: list[Issue] = Field(default_factory=list)
@@ -71,6 +73,7 @@ class AdversarialReviewOutput(BaseModel):
 # ============================================================
 # Agent
 # ============================================================
+
 
 class ReviewerAgent(BaseAgent):
     """Adversarial chapter reviewer with fresh, independent context.
@@ -173,44 +176,48 @@ class ReviewerAgent(BaseAgent):
         all_issues = list(adversarial.issues)
 
         for hole in adversarial.plot_holes:
-            all_issues.append(Issue(
-                severity="critical",
-                category="plot_hole",
-                description=hole,
-                suggestion="需要修复此逻辑漏洞：确保因果链完整",
-            ))
+            all_issues.append(
+                Issue(
+                    severity="critical",
+                    category="plot_hole",
+                    description=hole,
+                    suggestion="需要修复此逻辑漏洞：确保因果链完整",
+                )
+            )
 
         for drop in adversarial.reader_drop_points:
-            all_issues.append(Issue(
-                severity="major",
-                category="reader_engagement",
-                description=f"读者弃书风险：{drop}",
-                suggestion="增强此处的爽点、悬念或信息增量",
-            ))
+            all_issues.append(
+                Issue(
+                    severity="major",
+                    category="reader_engagement",
+                    description=f"读者弃书风险：{drop}",
+                    suggestion="增强此处的爽点、悬念或信息增量",
+                )
+            )
 
         for missed in adversarial.missed_opportunities:
-            all_issues.append(Issue(
-                severity="major",
-                category="missed_opportunity",
-                description=missed,
-                suggestion="考虑在本章中加入此元素",
-            ))
+            all_issues.append(
+                Issue(
+                    severity="major",
+                    category="missed_opportunity",
+                    description=missed,
+                    suggestion="考虑在本章中加入此元素",
+                )
+            )
 
         for inc in adversarial.character_inconsistencies:
-            all_issues.append(Issue(
-                severity="major",
-                category="character",
-                description=inc,
-                suggestion="检查角色设定，确保行为有合理的动机铺垫",
-            ))
+            all_issues.append(
+                Issue(
+                    severity="major",
+                    category="character",
+                    description=inc,
+                    suggestion="检查角色设定，确保行为有合理的动机铺垫",
+                )
+            )
 
         # Calculate pass/fail
-        avg_score = sum(adversarial.dimension_scores.values()) / max(
-            len(adversarial.dimension_scores), 1
-        )
-        has_critical = any(
-            i.severity == "critical" for i in all_issues
-        ) or bool(adversarial.plot_holes)
+        avg_score = sum(adversarial.dimension_scores.values()) / max(len(adversarial.dimension_scores), 1)
+        has_critical = any(i.severity == "critical" for i in all_issues) or bool(adversarial.plot_holes)
 
         return ReviewReport(
             chapter_number=0,  # Will be set by caller
@@ -254,8 +261,8 @@ class ReviewerAgent(BaseAgent):
 文风基准：
 - 语调：{style.tone}
 - 句式风格：{style.sentence_style}
-- 禁用表达：{', '.join(style.forbidden_phrases) if style.forbidden_phrases else '无'}
-- 推荐技法：{', '.join(style.preferred_techniques) if style.preferred_techniques else '无'}
+- 禁用表达：{", ".join(style.forbidden_phrases) if style.forbidden_phrases else "无"}
+- 推荐技法：{", ".join(style.preferred_techniques) if style.preferred_techniques else "无"}
 """
 
         if config:
@@ -322,8 +329,7 @@ class ReviewerAgent(BaseAgent):
             # Include all characters if none matched
             for cid, char in list(characters.characters.items())[:5]:
                 parts.append(
-                    f"- [{cid}] {char.name} ({char.role}): "
-                    f"性格={char.personality[:80]} | 动机={char.motivation[:80]}"
+                    f"- [{cid}] {char.name} ({char.role}): 性格={char.personality[:80]} | 动机={char.motivation[:80]}"
                 )
 
         # ── Outline context ──
@@ -332,8 +338,8 @@ class ReviewerAgent(BaseAgent):
             parts.append("## 故事大纲（用于验证情节一致性）")
             parts.append(f"- 主线：{outline.logline}")
             current_volume = None
-            for vol in (outline.volumes or []):
-                if hasattr(vol, 'start_chapter') and hasattr(vol, 'end_chapter'):
+            for vol in outline.volumes or []:
+                if hasattr(vol, "start_chapter") and hasattr(vol, "end_chapter"):
                     if vol.start_chapter <= draft.chapter_number <= vol.end_chapter:
                         current_volume = vol
                         break
@@ -361,7 +367,7 @@ class ReviewerAgent(BaseAgent):
         if len(content) > max_len:
             # Include first 1/3 and last 1/3, summarize middle
             third = max_len // 3
-            parts.append(content[:third * 2])
+            parts.append(content[: third * 2])
             parts.append(f"\n... (中间{len(content) - third * 3}字省略) ...\n")
             parts.append(content[-third:])
         else:

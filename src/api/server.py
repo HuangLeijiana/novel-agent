@@ -62,6 +62,7 @@ def create_app() -> FastAPI:
 
     # Serve frontend static files
     import os
+
     frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
     if os.path.exists(frontend_dir):
         app.mount("/static", StaticFiles(directory=frontend_dir), name="static")

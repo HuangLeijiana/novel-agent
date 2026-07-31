@@ -39,6 +39,7 @@ class PromptVersionManager:
 
     def __init__(self, template_dir: Optional[Path] = None):
         from .prompt_loader import _TEMPLATE_DIR
+
         self._template_dir = template_dir or _TEMPLATE_DIR
         self._versions_dir = self._template_dir / "_versions"
         self._versions_dir.mkdir(parents=True, exist_ok=True)
@@ -81,12 +82,14 @@ class PromptVersionManager:
             if prev_snapshot.exists():
                 prev_content = prev_snapshot.read_text(encoding="utf-8")
 
-        diff_lines = list(unified_diff(
-            prev_content.splitlines(keepends=True),
-            current_content.splitlines(keepends=True),
-            fromfile=f"{template_path} (v{len(history)})",
-            tofile=f"{template_path} (v{len(history) + 1})",
-        ))
+        diff_lines = list(
+            unified_diff(
+                prev_content.splitlines(keepends=True),
+                current_content.splitlines(keepends=True),
+                fromfile=f"{template_path} (v{len(history)})",
+                tofile=f"{template_path} (v{len(history) + 1})",
+            )
+        )
 
         # Create new version record
         new_version = len(history) + 1
@@ -178,10 +181,12 @@ class PromptVersionManager:
         for tmpl_path, history in self.scan_all().items():
             for record in history:
                 if record["timestamp"] >= since_timestamp:
-                    changes.append({
-                        "template": tmpl_path,
-                        **record,
-                    })
+                    changes.append(
+                        {
+                            "template": tmpl_path,
+                            **record,
+                        }
+                    )
         changes.sort(key=lambda r: r["timestamp"])
         return changes
 

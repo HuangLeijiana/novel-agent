@@ -32,6 +32,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(na
 
 # ── Fixtures ────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def scheduler():
     """Create ModelScheduler from .env settings."""
@@ -147,6 +148,7 @@ def characters():
 
 # ── Test ────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_create_master_outline(plot_planner, project_config, bible, characters):
     """Execute the full master outline creation against ModelScope.
@@ -173,9 +175,7 @@ async def test_create_master_outline(plot_planner, project_config, bible, charac
         return
 
     # ── Validate the result ──
-    assert isinstance(outline, MasterOutline), (
-        f"Expected MasterOutline, got {type(outline).__name__}"
-    )
+    assert isinstance(outline, MasterOutline), f"Expected MasterOutline, got {type(outline).__name__}"
     assert outline.title, "Title must not be empty"
     print(f"\n[OK] Title: {outline.title}")
     print(f"[OK] Logline: {outline.logline[:100]}...")
@@ -205,6 +205,7 @@ async def test_create_master_outline(plot_planner, project_config, bible, charac
 
 
 # ── Pydantic model unit tests (no LLM calls) ───────────────────────
+
 
 class TestMasterOutlineValidation:
     """Test Pydantic validation with various malformed inputs Qwen3 might produce."""
@@ -273,6 +274,7 @@ class TestMasterOutlineValidation:
             "chapter_count": 15,
         }
         from src.agents.plot_planner import MasterOutlineOutput
+
         result = MasterOutlineOutput.model_validate(data)
         assert result.volumes[0].start_chapter == 1
         assert result.volumes[0].end_chapter == 10
@@ -443,6 +445,7 @@ class TestMasterOutlineValidation:
 
 # ── Test ChapterPlanOutput validation ───────────────────────────────
 
+
 class TestChapterPlanValidation:
     """Test ChapterPlanOutput validation with malformed inputs."""
 
@@ -594,6 +597,7 @@ class TestChapterPlanValidation:
 
 # ── Chapter Planning Integration Test ────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_plan_chapter(plot_planner, project_config, bible, characters):
     """Test chapter-level planning against ModelScope.
@@ -640,7 +644,7 @@ async def test_plan_chapter(plot_planner, project_config, bible, characters):
     print(f"[OK] Goal: {plan.goal[:100]}...")
     print(f"[OK] Scenes: {len(plan.scenes)}")
     for i, scene in enumerate(plan.scenes):
-        print(f"  Scene {i+1}: {scene.setting} | goal={scene.goal[:40]}...")
+        print(f"  Scene {i + 1}: {scene.setting} | goal={scene.goal[:40]}...")
     print(f"[OK] POV: {plan.pov_character}")
     print(f"[OK] Conflict: {plan.conflict[:80]}...")
     print(f"[OK] Hooks: {len(plan.hooks)}")
@@ -707,9 +711,13 @@ if __name__ == "__main__":
         chars = CharacterRegistry(
             characters={
                 "char_001": CharacterProfile(
-                    id="char_001", name="秦默", role="protagonist",
-                    personality="坚韧不拔", motivation="成为最强",
-                    flaw="过于固执", backstory="被家族流放",
+                    id="char_001",
+                    name="秦默",
+                    role="protagonist",
+                    personality="坚韧不拔",
+                    motivation="成为最强",
+                    flaw="过于固执",
+                    backstory="被家族流放",
                 ),
             }
         )

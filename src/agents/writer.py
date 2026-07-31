@@ -21,8 +21,10 @@ logger = logging.getLogger(__name__)
 # Structured output schemas
 # ============================================================
 
+
 class ChapterContentOutput(BaseModel):
     """LLM output for chapter content."""
+
     title: str = Field(default="", description="章节标题")
     content: str = Field(default="", description="章节正文（Markdown格式）")
     author_notes: str = Field(default="", description="作者附注")
@@ -51,6 +53,7 @@ class ChapterContentOutput(BaseModel):
 
 class FactExtractionOutput(BaseModel):
     """LLM output for fact extraction from chapter."""
+
     new_facts: list[Fact] = Field(default_factory=list, description="新增事实")
     state_changes: list[StateChange] = Field(default_factory=list, description="角色状态变化")
 
@@ -63,17 +66,11 @@ class FactExtractionOutput(BaseModel):
         d = dict(data)
         # Coerce string items in state_changes list
         if "state_changes" in d and isinstance(d["state_changes"], list):
-            d["state_changes"] = [
-                {"reason": x} if isinstance(x, str) else x
-                for x in d["state_changes"]
-            ]
+            d["state_changes"] = [{"reason": x} if isinstance(x, str) else x for x in d["state_changes"]]
         # Coerce string items in new_facts list (Fact already handles this,
         # but be extra safe)
         if "new_facts" in d and isinstance(d["new_facts"], list):
-            d["new_facts"] = [
-                {"description": x} if isinstance(x, str) else x
-                for x in d["new_facts"]
-            ]
+            d["new_facts"] = [{"description": x} if isinstance(x, str) else x for x in d["new_facts"]]
         return d
 
 
@@ -105,6 +102,7 @@ def _build_expansion_prompt(
 # ============================================================
 # Agent
 # ============================================================
+
 
 class WriterAgent(BaseAgent):
     """Writes chapter drafts with full awareness of the novel bible, outline,
@@ -151,8 +149,8 @@ class WriterAgent(BaseAgent):
         system = self.build_system_prompt(
             role="小说作家",
             expertise="创作引人入胜的小说章节。你的文字要有质感——精准的描写、自然的对话、"
-                      "恰到好处的节奏。你能自然地融入世界观，让角色行为有动机可循，"
-                      "让每个场景都有存在的理由。",
+            "恰到好处的节奏。你能自然地融入世界观，让角色行为有动机可循，"
+            "让每个场景都有存在的理由。",
             constraints=f"""写作约束：
 - 语言：{config.language}
 - 文风语调：{bible.style_contract.tone}
@@ -160,7 +158,7 @@ class WriterAgent(BaseAgent):
 - 【最重要】全章总字数必须不少于{chapter_plan.word_count_target}字。这是强制要求——如果你写不够，系统会拒绝你的输出。请务必在完成每个场景后自查字数，不足立刻扩充。
 - 叙事视角：{bible.rules.pov_constraint}
 - 时态：{bible.rules.tense}
-- 禁用表达：{', '.join(bible.style_contract.forbidden_phrases) if bible.style_contract.forbidden_phrases else '无特定禁用'}
+- 禁用表达：{", ".join(bible.style_contract.forbidden_phrases) if bible.style_contract.forbidden_phrases else "无特定禁用"}
 - 场景分隔符：{bible.rules.scene_break_style}""",
         )
 
@@ -188,7 +186,7 @@ class WriterAgent(BaseAgent):
 {self._format_emotional_curve(chapter_plan.emotional_curve)}
 
 【出场角色】
-{', '.join(chapter_plan.characters_involved)}
+{", ".join(chapter_plan.characters_involved)}
 
 写作要求：
 1. 严格遵循章节规划的场景顺序和情绪曲线
@@ -240,7 +238,9 @@ class WriterAgent(BaseAgent):
                     word_count = expand_count
                     logger.info(f"Chapter {chapter_num} expanded: {word_count} chars (+{delta})")
                 else:
-                    logger.warning(f"Expansion didn't increase length ({expand_count} <= {word_count}), keeping first pass")
+                    logger.warning(
+                        f"Expansion didn't increase length ({expand_count} <= {word_count}), keeping first pass"
+                    )
             except Exception as e:
                 logger.warning(f"Expansion failed ({e}), keeping first pass: {word_count} chars")
 
@@ -267,7 +267,7 @@ class WriterAgent(BaseAgent):
         system = self.build_system_prompt(
             role="事实提取器",
             expertise="从小说章节中精确提取新增的世界观事实、角色状态变化和关系变化。"
-                      "你需要仔细区分'早已存在的事实'和'本章新建立的事实'。",
+            "你需要仔细区分'早已存在的事实'和'本章新建立的事实'。",
         )
 
         # Build character ID mapping
@@ -276,7 +276,7 @@ class WriterAgent(BaseAgent):
         user = f"""请从以下章节中提取：
 
 【章节正文】
-{draft.content[:5000]}{'...(内容过长已截断)' if len(draft.content) > 5000 else ''}
+{draft.content[:5000]}{"...(内容过长已截断)" if len(draft.content) > 5000 else ""}
 
 【已知角色】{char_names}
 
@@ -313,10 +313,7 @@ class WriterAgent(BaseAgent):
 
         draft.new_facts = result.new_facts
         draft.character_state_changes = result.state_changes
-        logger.info(
-            f"Extracted {len(draft.new_facts)} facts, "
-            f"{len(draft.character_state_changes)} state changes"
-        )
+        logger.info(f"Extracted {len(draft.new_facts)} facts, {len(draft.character_state_changes)} state changes")
         return draft
 
     # ================================================================
@@ -336,7 +333,9 @@ class WriterAgent(BaseAgent):
         ctx = self.build_context_block(
             project_config=config.model_dump(),
             bible=bible.model_dump(),
-            characters={cid: c.model_dump() for cid, c in characters.characters.items()} if hasattr(characters, 'characters') else {},
+            characters={cid: c.model_dump() for cid, c in characters.characters.items()}
+            if hasattr(characters, "characters")
+            else {},
             outline=outline.model_dump(),
             memory=memory.model_dump() if memory else None,
         )

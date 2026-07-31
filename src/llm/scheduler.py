@@ -44,7 +44,7 @@ def _try_parse_json(raw: str) -> Any:
             result_chars.append(ch)
             escaped = False
             continue
-        if ch == '\\':
+        if ch == "\\":
             result_chars.append(ch)
             escaped = True
             continue
@@ -53,17 +53,17 @@ def _try_parse_json(raw: str) -> Any:
             result_chars.append(ch)
             continue
         if in_string:
-            if ch == '\n':
-                result_chars.append('\\n')
-            elif ch == '\r':
-                result_chars.append('\\r')
-            elif ch == '\t':
-                result_chars.append('\\t')
+            if ch == "\n":
+                result_chars.append("\\n")
+            elif ch == "\r":
+                result_chars.append("\\r")
+            elif ch == "\t":
+                result_chars.append("\\t")
             else:
                 result_chars.append(ch)
         else:
             result_chars.append(ch)
-    fixed = ''.join(result_chars)
+    fixed = "".join(result_chars)
     try:
         return json.loads(fixed)
     except json.JSONDecodeError:
@@ -81,21 +81,21 @@ def _try_parse_json(raw: str) -> Any:
     stack = []
     start = None
     for i, ch in enumerate(text):
-        if ch == '{':
+        if ch == "{":
             if not stack:
                 start = i
-            stack.append('{')
-        elif ch == '}':
+            stack.append("{")
+        elif ch == "}":
             if stack:
                 stack.pop()
                 if not stack and start is not None:
                     try:
-                        return json.loads(text[start:i+1])
+                        return json.loads(text[start : i + 1])
                     except json.JSONDecodeError:
                         continue
-        elif ch == '[':
-            stack.append('[')
-        elif ch == ']':
+        elif ch == "[":
+            stack.append("[")
+        elif ch == "]":
             if stack:
                 stack.pop()
 
@@ -107,18 +107,24 @@ def _try_parse_json(raw: str) -> Any:
     bracket_count = 0
     for ch in text:
         if escaped:
-            escaped = False; continue
-        if ch == '\\':
-            escaped = True; continue
+            escaped = False
+            continue
+        if ch == "\\":
+            escaped = True
+            continue
         if ch == '"' and not escaped:
             in_str = not in_str
         if not in_str:
-            if ch == '{': brace_count += 1
-            elif ch == '}': brace_count -= 1
-            elif ch == '[': bracket_count += 1
-            elif ch == ']': bracket_count -= 1
+            if ch == "{":
+                brace_count += 1
+            elif ch == "}":
+                brace_count -= 1
+            elif ch == "[":
+                bracket_count += 1
+            elif ch == "]":
+                bracket_count -= 1
 
-    fixed = text.rstrip().rstrip(',')  # strip trailing commas too
+    fixed = text.rstrip().rstrip(",")  # strip trailing commas too
     # If still inside a string, close it
     if in_str:
         fixed += '"'
@@ -126,10 +132,10 @@ def _try_parse_json(raw: str) -> Any:
     # starting with whichever type is innermost (has more opens)
     while brace_count > 0 or bracket_count > 0:
         if brace_count >= bracket_count and brace_count > 0:
-            fixed += '}'
+            fixed += "}"
             brace_count -= 1
         elif bracket_count > 0:
-            fixed += ']'
+            fixed += "]"
             bracket_count -= 1
 
     try:
@@ -139,29 +145,34 @@ def _try_parse_json(raw: str) -> Any:
 
     # Attempt 5: try removing the last incomplete item (common with list truncation)
     # Find the last complete item before the truncation point
-    if '[' in text:
+    if "[" in text:
         # Try closing at the last comma before an unclosed string
-        last_comma = text.rfind(',')
+        last_comma = text.rfind(",")
         if last_comma > 0:
             truncated = text[:last_comma].rstrip()
             # Re-check brace/bracket balance on truncated text
-            bc = truncated.count('{') - truncated.count('}')
-            brc = truncated.count('[') - truncated.count(']')
+            bc = truncated.count("{") - truncated.count("}")
+            brc = truncated.count("[") - truncated.count("]")
             in_s = False
             esc = False
             for ch in truncated:
-                if esc: esc = False; continue
-                if ch == '\\': esc = True; continue
-                if ch == '"': in_s = not in_s
+                if esc:
+                    esc = False
+                    continue
+                if ch == "\\":
+                    esc = True
+                    continue
+                if ch == '"':
+                    in_s = not in_s
             if in_s:
                 truncated += '"'
             # Inside-out closing
             while bc > 0 or brc > 0:
                 if bc >= brc and bc > 0:
-                    truncated += '}'
+                    truncated += "}"
                     bc -= 1
                 elif brc > 0:
-                    truncated += ']'
+                    truncated += "]"
                     brc -= 1
             try:
                 return json.loads(truncated)
@@ -169,6 +180,7 @@ def _try_parse_json(raw: str) -> Any:
                 pass
 
     raise ValueError(f"Cannot parse LLM JSON output (first 200 chars): {text[:200]}")
+
 
 logger = logging.getLogger(__name__)
 
@@ -194,9 +206,7 @@ class ModelScheduler:
 
             assignments = get_default_assignments()
 
-        self._assignments: dict[str, ModelAssignment] = {
-            a.agent_type: a for a in assignments
-        }
+        self._assignments: dict[str, ModelAssignment] = {a.agent_type: a for a in assignments}
         self._providers: dict[str, BaseLLMProvider] = {}
         self._usage_stats: dict[str, dict] = {
             agent_type: {"calls": 0, "input_tokens": 0, "output_tokens": 0, "cost": 0.0, "errors": 0}
@@ -306,10 +316,7 @@ class ModelScheduler:
 
             # Guard: structured output must be a JSON object, not a primitive
             if not isinstance(data, dict):
-                logger.warning(
-                    f"LLM returned non-object JSON ({type(data).__name__}): "
-                    f"{str(data)[:200]}"
-                )
+                logger.warning(f"LLM returned non-object JSON ({type(data).__name__}): {str(data)[:200]}")
                 raise ValueError(f"Expected JSON object, got {type(data).__name__}")
 
             cn_to_en = _build_field_map(response_model)
@@ -428,8 +435,7 @@ class ModelScheduler:
             # OpenAI-compatible providers — use the same API format
             if not settings.has_openai:
                 raise ValueError(
-                    f"OPENAI_API_KEY not configured for {provider_name}. "
-                    f"Set OPENAI_API_KEY and OPENAI_BASE_URL in .env"
+                    f"OPENAI_API_KEY not configured for {provider_name}. Set OPENAI_API_KEY and OPENAI_BASE_URL in .env"
                 )
             kwargs = {"api_key": settings.openai_api_key}
             if settings.openai_base_url:
@@ -455,9 +461,16 @@ class ModelScheduler:
 
     def _track_success(self, agent_type: str, response: LLMResponse) -> None:
         """Track successful API call."""
-        stats = self._usage_stats.setdefault(agent_type, {
-            "calls": 0, "input_tokens": 0, "output_tokens": 0, "cost": 0.0, "errors": 0,
-        })
+        stats = self._usage_stats.setdefault(
+            agent_type,
+            {
+                "calls": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost": 0.0,
+                "errors": 0,
+            },
+        )
         stats["calls"] += 1
         stats["input_tokens"] += response.input_tokens
         stats["output_tokens"] += response.output_tokens
@@ -465,7 +478,14 @@ class ModelScheduler:
 
     def _track_error(self, agent_type: str) -> None:
         """Track failed API call."""
-        stats = self._usage_stats.setdefault(agent_type, {
-            "calls": 0, "input_tokens": 0, "output_tokens": 0, "cost": 0.0, "errors": 0,
-        })
+        stats = self._usage_stats.setdefault(
+            agent_type,
+            {
+                "calls": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost": 0.0,
+                "errors": 0,
+            },
+        )
         stats["errors"] += 1

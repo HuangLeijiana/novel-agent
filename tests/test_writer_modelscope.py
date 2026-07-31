@@ -21,15 +21,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from src.config.settings import get_settings
 from src.llm.scheduler import ModelScheduler
 from src.models.bible import (
-    CoreConflict, Faction, NarrativeRules, NovelBible,
-    StyleContract, Theme, WorldBuilding,
+    CoreConflict,
+    Faction,
+    NarrativeRules,
+    NovelBible,
+    StyleContract,
+    Theme,
+    WorldBuilding,
 )
 from src.models.chapter import ChapterDraft
 from src.models.characters import CharacterProfile, CharacterRegistry
 from src.models.memory import MemoryState
 from src.models.outline import (
-    ChapterPlan, EmotionalBeat, Hook, MasterOutline,
-    PlotArc, Scene, TurningPoint, Volume,
+    ChapterPlan,
+    EmotionalBeat,
+    Hook,
+    MasterOutline,
+    PlotArc,
+    Scene,
+    TurningPoint,
+    Volume,
 )
 from src.models.project import ProjectConfig
 from src.agents.writer import WriterAgent, ChapterContentOutput, FactExtractionOutput
@@ -41,6 +52,7 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════
+
 
 @pytest.fixture
 def scheduler():
@@ -96,7 +108,9 @@ def bible():
         Theme(name="友情与背叛", description="修真路上的盟友与敌人"),
     ]
     conflicts = [
-        CoreConflict(conflict_type="person_vs_society", description="主角被家族抛弃后在宗门中证明自己", stakes="生存与尊严"),
+        CoreConflict(
+            conflict_type="person_vs_society", description="主角被家族抛弃后在宗门中证明自己", stakes="生存与尊严"
+        ),
         CoreConflict(conflict_type="person_vs_person", description="主角与宿敌的终极对决", stakes="大道之争，不死不休"),
     ]
     return NovelBible(
@@ -116,21 +130,27 @@ def characters():
     return CharacterRegistry(
         characters={
             "char_001": CharacterProfile(
-                id="char_001", name="秦默", role="protagonist",
+                id="char_001",
+                name="秦默",
+                role="protagonist",
                 personality="坚韧不拔，心思缜密，但有时过于冒险",
                 motivation="打破命运枷锁，成为最强修真者",
                 flaw="过于固执，不轻易相信他人",
                 backstory="秦家嫡系却天生废脉，被家族流放至偏远矿区，偶得远古血脉传承",
             ),
             "char_002": CharacterProfile(
-                id="char_002", name="苏婉清", role="deuteragonist",
+                id="char_002",
+                name="苏婉清",
+                role="deuteragonist",
                 personality="外冷内热，聪慧过人",
                 motivation="寻找失散多年的师父",
                 flaw="不善于表达感情",
                 backstory="青云宗第一天才，身世成谜",
             ),
             "char_003": CharacterProfile(
-                id="char_003", name="赵铁山", role="antagonist",
+                id="char_003",
+                name="赵铁山",
+                role="antagonist",
                 personality="骄横跋扈，心胸狭隘",
                 motivation="维护自己在宗门中的地位和权力",
                 flaw="嫉妒心极强，容不得别人超越自己",
@@ -147,13 +167,27 @@ def outline():
         title="逆命九霄",
         logline="废柴少年秦默觉醒远古血脉，在弱肉强食的修真世界逆天改命，一步步踏上巅峰。",
         main_plot=[
-            PlotArc(name="主线", description="秦默从废柴到强者的成长之路", arc_type="main", start_chapter=1, end_chapter=30),
+            PlotArc(
+                name="主线", description="秦默从废柴到强者的成长之路", arc_type="main", start_chapter=1, end_chapter=30
+            ),
         ],
         subplots=[
-            PlotArc(name="苏婉清寻师线", description="苏婉清寻找失散师父的调查线", arc_type="subplot", start_chapter=3, end_chapter=20),
+            PlotArc(
+                name="苏婉清寻师线",
+                description="苏婉清寻找失散师父的调查线",
+                arc_type="subplot",
+                start_chapter=3,
+                end_chapter=20,
+            ),
         ],
         volumes=[
-            Volume(title="第一卷：废柴觉醒", logline="从家族弃子到宗门弟子的蜕变", number=1, start_chapter=1, end_chapter=10),
+            Volume(
+                title="第一卷：废柴觉醒",
+                logline="从家族弃子到宗门弟子的蜕变",
+                number=1,
+                start_chapter=1,
+                end_chapter=10,
+            ),
         ],
         major_turning_points=[
             TurningPoint(turning_type="inciting_incident", chapter=1, description="秦默在矿区意外获得远古血脉传承"),
@@ -229,6 +263,7 @@ def memory():
 # ═══════════════════════════════════════════════════════════════════════
 # Pydantic Unit Tests: ChapterContentOutput
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestChapterContentOutput:
     """Test ChapterContentOutput validation with malformed Qwen3 inputs."""
@@ -346,6 +381,7 @@ class TestChapterContentOutput:
 # Pydantic Unit Tests: FactExtractionOutput
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestFactExtractionOutput:
     """Test FactExtractionOutput validation with malformed Qwen3 inputs."""
 
@@ -456,6 +492,7 @@ class TestFactExtractionOutput:
 # ═══════════════════════════════════════════════════════════════════════
 # Integration Tests
 # ═══════════════════════════════════════════════════════════════════════
+
 
 @pytest.mark.asyncio
 async def test_generate_chapter(writer, project_config, bible, characters, outline, chapter_plan, memory):
@@ -577,6 +614,7 @@ async def test_extract_facts(writer, project_config, bible, characters, outline,
 # ═══════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
+
     async def main():
         logging.basicConfig(level=logging.DEBUG)
         s = ModelScheduler()
@@ -592,9 +630,12 @@ if __name__ == "__main__":
             target_word_count=90000,
         )
         world = WorldBuilding(
-            name="苍玄大陆", world_type="fantasy",
-            geography="九大州", history="万年前仙魔大战",
-            culture="以实力为尊", magic_system="修真体系",
+            name="苍玄大陆",
+            world_type="fantasy",
+            geography="九大州",
+            history="万年前仙魔大战",
+            culture="以实力为尊",
+            magic_system="修真体系",
         )
         b = NovelBible(
             world=world,
@@ -610,18 +651,28 @@ if __name__ == "__main__":
                 CoreConflict(conflict_type="person_vs_person", description="主角与宿敌对决"),
             ],
         )
-        chars = CharacterRegistry(characters={
-            "char_001": CharacterProfile(
-                id="char_001", name="秦默", role="protagonist",
-                personality="坚韧不拔", motivation="成为最强",
-                flaw="过于固执", backstory="被家族流放",
-            ),
-            "char_002": CharacterProfile(
-                id="char_002", name="苏婉清", role="deuteragonist",
-                personality="外冷内热", motivation="寻找师父",
-                flaw="不善表达", backstory="身世成谜",
-            ),
-        })
+        chars = CharacterRegistry(
+            characters={
+                "char_001": CharacterProfile(
+                    id="char_001",
+                    name="秦默",
+                    role="protagonist",
+                    personality="坚韧不拔",
+                    motivation="成为最强",
+                    flaw="过于固执",
+                    backstory="被家族流放",
+                ),
+                "char_002": CharacterProfile(
+                    id="char_002",
+                    name="苏婉清",
+                    role="deuteragonist",
+                    personality="外冷内热",
+                    motivation="寻找师父",
+                    flaw="不善表达",
+                    backstory="身世成谜",
+                ),
+            }
+        )
         outline = MasterOutline(
             title="逆命九霄",
             logline="废柴少年逆天改命",
@@ -638,14 +689,24 @@ if __name__ == "__main__":
             title="废脉少年",
             goal="建立主角困境和世界观",
             scenes=[
-                Scene(number=1, setting="秦家矿区", pov="char_001",
-                      characters_present=["char_001"],
-                      goal="展示主角卑微地位", conflict="矿工嘲笑和监工压迫",
-                      outcome="秦默眼中闪过一丝不甘"),
-                Scene(number=2, setting="矿区深处", pov="char_001",
-                      characters_present=["char_001"],
-                      goal="发现异常矿脉", conflict="矿洞塌方",
-                      outcome="发现远古晶石"),
+                Scene(
+                    number=1,
+                    setting="秦家矿区",
+                    pov="char_001",
+                    characters_present=["char_001"],
+                    goal="展示主角卑微地位",
+                    conflict="矿工嘲笑和监工压迫",
+                    outcome="秦默眼中闪过一丝不甘",
+                ),
+                Scene(
+                    number=2,
+                    setting="矿区深处",
+                    pov="char_001",
+                    characters_present=["char_001"],
+                    goal="发现异常矿脉",
+                    conflict="矿洞塌方",
+                    outcome="发现远古晶石",
+                ),
             ],
             pov_character="char_001",
             conflict="主角内心的不甘与现实的压迫",
@@ -667,8 +728,12 @@ if __name__ == "__main__":
         print("Testing generate_chapter...")
         try:
             draft = await w.generate_chapter(
-                chapter_plan=plan, config=pc, bible=b,
-                characters=chars, outline=outline, memory=mem,
+                chapter_plan=plan,
+                config=pc,
+                bible=b,
+                characters=chars,
+                outline=outline,
+                memory=mem,
             )
             print(f"SUCCESS: {draft.title} ({draft.word_count} chars)")
             print(f"Content preview:\n{draft.content[:500]}...")

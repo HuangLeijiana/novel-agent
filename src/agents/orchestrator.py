@@ -56,14 +56,12 @@ def _build_topic_context(state: "MainState") -> tuple[str, list[str]]:
             parts.append("10章节奏骨架：")
             for ch in (outline.chapters or [])[:5]:
                 parts.append(
-                    f"  第{ch.chapter_number}章 | 目标：{ch.goal} | "
-                    f"冲突：{ch.conflict} | 爽点：{ch.pleasure_point}"
+                    f"  第{ch.chapter_number}章 | 目标：{ch.goal} | 冲突：{ch.conflict} | 爽点：{ch.pleasure_point}"
                 )
             if outline.chapters and len(outline.chapters) >= 10:
                 last = outline.chapters[-1]
                 parts.append(
-                    f"  ... → 第{last.chapter_number}章(终章) | "
-                    f"目标：{last.goal} | 爽点：{last.pleasure_point}"
+                    f"  ... → 第{last.chapter_number}章(终章) | 目标：{last.goal} | 爽点：{last.pleasure_point}"
                 )
             parts.append(f"下一事件钩子：{outline.next_arc_hook}")
             parts.append("")
@@ -117,7 +115,7 @@ def _extract_genres_from_scans(
     for report in (feilu, fanqie):
         if report is None or report.scan_failed:
             continue
-        for entry in (report.entries or []):
+        for entry in report.entries or []:
             g = (entry.genre or "").strip()
             # Normalize common genre patterns
             if not g:
@@ -132,15 +130,23 @@ def _extract_genres_from_scans(
     # If no genre tags found, try to infer from book titles
     if not genres:
         GENRE_KEYWORDS = {
-            "战神": "都市战神", "修仙": "玄幻修仙", "系统": "系统流",
-            "重生": "重生逆袭", "穿越": "穿越架空", "赘婿": "都市赘婿",
-            "神医": "都市神医", "盗墓": "悬疑探险", "灵异": "灵异恐怖",
-            "游戏": "游戏异界", "末日": "末日生存", "武侠": "武侠江湖",
+            "战神": "都市战神",
+            "修仙": "玄幻修仙",
+            "系统": "系统流",
+            "重生": "重生逆袭",
+            "穿越": "穿越架空",
+            "赘婿": "都市赘婿",
+            "神医": "都市神医",
+            "盗墓": "悬疑探险",
+            "灵异": "灵异恐怖",
+            "游戏": "游戏异界",
+            "末日": "末日生存",
+            "武侠": "武侠江湖",
         }
         for report in (feilu, fanqie):
             if report is None or report.scan_failed:
                 continue
-            for entry in (report.entries or []):
+            for entry in report.entries or []:
                 title = (entry.title or "").strip()
                 for kw, genre in GENRE_KEYWORDS.items():
                     if kw in title and genre not in seen:
@@ -209,17 +215,23 @@ class OrchestratorAgent:
         # Run both scans (can be parallel if we implement async browser)
         feilu = await self.topic_scout.scan_feilu(page_content=feilu_content)
         state.topic_research.feilu_scan = feilu
-        state.agent_log.append(AgentLogEntry(
-            agent="topic_scout", phase="scan_feilu",
-            summary=f"飞卢扫榜: {'失败' if feilu.scan_failed else f'{len(feilu.entries)}本书'}",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="topic_scout",
+                phase="scan_feilu",
+                summary=f"飞卢扫榜: {'失败' if feilu.scan_failed else f'{len(feilu.entries)}本书'}",
+            )
+        )
 
         fanqie = await self.topic_scout.scan_fanqie(page_content=fanqie_content)
         state.topic_research.fanqie_scan = fanqie
-        state.agent_log.append(AgentLogEntry(
-            agent="topic_scout", phase="scan_fanqie",
-            summary=f"番茄扫榜: {'失败' if fanqie.scan_failed else f'{len(fanqie.entries)}本书'}",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="topic_scout",
+                phase="scan_fanqie",
+                summary=f"番茄扫榜: {'失败' if fanqie.scan_failed else f'{len(fanqie.entries)}本书'}",
+            )
+        )
 
         return state
 
@@ -244,13 +256,17 @@ class OrchestratorAgent:
 
         # Step 1C: Cross-platform comparison
         cross = await self.topic_scout.cross_platform_analysis(
-            feilu=feilu, fanqie=fanqie,
+            feilu=feilu,
+            fanqie=fanqie,
         )
         research.cross_platform = cross
-        state.agent_log.append(AgentLogEntry(
-            agent="topic_scout", phase="cross_platform",
-            summary=f"交叉分析: {len(cross.entries)}题材, 保留{len(cross.selected_directions)}方向",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="topic_scout",
+                phase="cross_platform",
+                summary=f"交叉分析: {len(cross.entries)}题材, 保留{len(cross.selected_directions)}方向",
+            )
+        )
 
         # Build fallback directions from scan data when cross-platform analysis
         # produces no directions (e.g., single-platform scan or thin data)
@@ -272,10 +288,13 @@ class OrchestratorAgent:
             fanqie_scan=fanqie,
         )
         research.benchmarks = benchmarks
-        state.agent_log.append(AgentLogEntry(
-            agent="topic_scout", phase="benchmarks",
-            summary=f"对标拆解: {len(benchmarks.entries)}本书",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="topic_scout",
+                phase="benchmarks",
+                summary=f"对标拆解: {len(benchmarks.entries)}本书",
+            )
+        )
 
         # Step 3A: Generate 12 candidate topics
         candidates = await self.topic_scout.generate_topics(
@@ -283,32 +302,40 @@ class OrchestratorAgent:
             benchmarks=benchmarks,
         )
         research.candidates = candidates
-        state.agent_log.append(AgentLogEntry(
-            agent="topic_scout", phase="generate_topics",
-            summary=f"生成{len(candidates.topics)}个候选题材",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="topic_scout",
+                phase="generate_topics",
+                summary=f"生成{len(candidates.topics)}个候选题材",
+            )
+        )
 
         if not candidates.topics:
             logger.warning("No candidate topics generated — building fallback topics")
             fallback_topics = []
             for direction in effective_directions[:8]:
-                fallback_topics.append(CandidateTopic(
-                    genre_name=direction,
-                    one_line_setting=f"一部{direction}题材的小说",
-                    golden_finger="待定",
-                    chapter1_conflict="待定",
-                    first_event_direction="待定",
-                    first_pleasure_wave="待定",
-                ))
+                fallback_topics.append(
+                    CandidateTopic(
+                        genre_name=direction,
+                        one_line_setting=f"一部{direction}题材的小说",
+                        golden_finger="待定",
+                        chapter1_conflict="待定",
+                        first_event_direction="待定",
+                        first_pleasure_wave="待定",
+                    )
+                )
             if fallback_topics:
                 from ..models.topic import CandidateTopicsOutput
+
                 candidates = CandidateTopicsOutput(topics=fallback_topics)
                 research.candidates = candidates
                 logger.info(f"Created {len(fallback_topics)} fallback topics from effective directions")
             else:
                 # Ultimate fallback: generic topics
-                generic = [CandidateTopic(genre_name=g, one_line_setting=f"一部{g}题材的小说")
-                          for g in ["都市生活", "玄幻修仙", "系统流", "重生逆袭"]]
+                generic = [
+                    CandidateTopic(genre_name=g, one_line_setting=f"一部{g}题材的小说")
+                    for g in ["都市生活", "玄幻修仙", "系统流", "重生逆袭"]
+                ]
                 candidates = CandidateTopicsOutput(topics=generic)
                 research.candidates = candidates
                 logger.info("Created 4 generic fallback topics")
@@ -316,10 +343,13 @@ class OrchestratorAgent:
         # Step 3B: Score and narrow to top 4
         scores = await self.topic_scout.score_topics(candidates)
         research.scores = scores
-        state.agent_log.append(AgentLogEntry(
-            agent="topic_scout", phase="score_topics",
-            summary=f"评分完成: 前4名={scores.top_4}",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="topic_scout",
+                phase="score_topics",
+                summary=f"评分完成: 前4名={scores.top_4}",
+            )
+        )
 
         # Step 4A: Generate titles for top 4 (human picks final 2 later)
         top_genres = scores.top_4[:4] if len(scores.top_4) >= 4 else list(scores.top_4)
@@ -337,13 +367,17 @@ class OrchestratorAgent:
                 continue
             topic = matching[0]
             title_report = await self.topic_scout.generate_titles(
-                genre_name=genre_name, topic=topic,
+                genre_name=genre_name,
+                topic=topic,
             )
             research.title_synopsis.append(title_report)
-            state.agent_log.append(AgentLogEntry(
-                agent="topic_scout", phase="generate_titles",
-                summary=f"书名: {genre_name} → {title_report.final_title}",
-            ))
+            state.agent_log.append(
+                AgentLogEntry(
+                    agent="topic_scout",
+                    phase="generate_titles",
+                    summary=f"书名: {genre_name} → {title_report.final_title}",
+                )
+            )
 
         return state
 
@@ -371,37 +405,45 @@ class OrchestratorAgent:
             # Source 1: candidate topics (preferred — real topic data)
             if research.candidates and research.candidates.topics:
                 t = research.candidates.topics[0]
-                fallback_reports.append(TitleSynopsisReport(
-                    genre_name=t.genre_name,
-                    final_title=t.genre_name,
-                    final_synopsis=t.one_line_setting or f"{t.genre_name}题材小说",
-                ))
+                fallback_reports.append(
+                    TitleSynopsisReport(
+                        genre_name=t.genre_name,
+                        final_title=t.genre_name,
+                        final_synopsis=t.one_line_setting or f"{t.genre_name}题材小说",
+                    )
+                )
 
             # Source 2: cross-platform directions
             if not fallback_reports and research.cross_platform and research.cross_platform.selected_directions:
                 d = research.cross_platform.selected_directions[0]
-                fallback_reports.append(TitleSynopsisReport(
-                    genre_name=d,
-                    final_title=d,
-                    final_synopsis=f"一部{d}题材的精彩小说",
-                ))
+                fallback_reports.append(
+                    TitleSynopsisReport(
+                        genre_name=d,
+                        final_title=d,
+                        final_synopsis=f"一部{d}题材的精彩小说",
+                    )
+                )
 
             # Source 3: user inspiration wrapped as a real topic
             if not fallback_reports and state.current_inspiration:
-                fallback_reports.append(TitleSynopsisReport(
-                    genre_name="自定题材",
-                    final_title=state.current_inspiration[:50],
-                    final_synopsis=state.current_inspiration,
-                ))
+                fallback_reports.append(
+                    TitleSynopsisReport(
+                        genre_name="自定题材",
+                        final_title=state.current_inspiration[:50],
+                        final_synopsis=state.current_inspiration,
+                    )
+                )
 
             # Source 4: generic placeholder
             if not fallback_reports:
                 logger.warning("No fallback data available — generating generic placeholder")
-                fallback_reports = [TitleSynopsisReport(
-                    genre_name="都市生活",
-                    final_title="未命名小说",
-                    final_synopsis="一部精彩的网络小说",
-                )]
+                fallback_reports = [
+                    TitleSynopsisReport(
+                        genre_name="都市生活",
+                        final_title="未命名小说",
+                        final_synopsis="一部精彩的网络小说",
+                    )
+                ]
 
             research.title_synopsis = fallback_reports
 
@@ -410,19 +452,18 @@ class OrchestratorAgent:
         title_report = research.title_synopsis[0]
         genre = title_report.genre_name
         # Find matching candidate
-        matching = [
-            t for t in (research.candidates.topics if research.candidates else [])
-            if t.genre_name == genre
-        ]
+        matching = [t for t in (research.candidates.topics if research.candidates else []) if t.genre_name == genre]
         if not matching:
-            matching = [CandidateTopic(
-                genre_name=genre,
-                one_line_setting=title_report.final_synopsis,
-                golden_finger="",
-                chapter1_conflict="",
-                first_event_direction="",
-                first_pleasure_wave="",
-            )]
+            matching = [
+                CandidateTopic(
+                    genre_name=genre,
+                    one_line_setting=title_report.final_synopsis,
+                    golden_finger="",
+                    chapter1_conflict="",
+                    first_event_direction="",
+                    first_pleasure_wave="",
+                )
+            ]
 
         outline = await self.topic_scout.plan_mini_arc(
             genre_name=genre,
@@ -431,10 +472,13 @@ class OrchestratorAgent:
         )
         outlines[genre] = outline
         chapter_count = len(outline.chapters) if outline.chapters else 0
-        state.agent_log.append(AgentLogEntry(
-            agent="topic_scout", phase="plan_mini_arc",
-            summary=f"小事件大纲: {genre} → {chapter_count}章, 目标{outline.total_words}字",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="topic_scout",
+                phase="plan_mini_arc",
+                summary=f"小事件大纲: {genre} → {chapter_count}章, 目标{outline.total_words}字",
+            )
+        )
         if chapter_count == 0:
             logger.warning(f"Mini-arc outline for '{genre}' has 0 chapters — all generation layers failed")
 
@@ -444,10 +488,13 @@ class OrchestratorAgent:
         total_chapters = sum(len(o.chapters) for o in outlines.values() if o.chapters)
         if total_chapters == 0:
             logger.warning("Mini-arc outline has 0 chapters — all generation layers failed")
-            state.agent_log.append(AgentLogEntry(
-                agent="orchestrator", phase="mini_arc_outline",
-                summary="⚠️ 大纲章节为空 — 所有生成层均失败，请检查LLM配置",
-            ))
+            state.agent_log.append(
+                AgentLogEntry(
+                    agent="orchestrator",
+                    phase="mini_arc_outline",
+                    summary="⚠️ 大纲章节为空 — 所有生成层均失败，请检查LLM配置",
+                )
+            )
 
         return state
 
@@ -492,9 +539,9 @@ class OrchestratorAgent:
                 config = config.model_copy()
             enriched = (
                 f"{config.inspiration}\n\n"
-                f"{'='*40}\n"
+                f"{'=' * 40}\n"
                 f"以下为上游选题研究成果，请严格以此为基准构建世界观：\n"
-                f"{'='*40}\n"
+                f"{'=' * 40}\n"
                 f"{topic_context}"
             )
             config.inspiration = enriched[:2000]
@@ -505,44 +552,64 @@ class OrchestratorAgent:
 
         # Step 1: World building
         world = await self.architect.build_world(config)
-        state.agent_log.append(AgentLogEntry(
-            agent="architect", phase="build_world",
-            summary=f"World '{world.name}' created",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="architect",
+                phase="build_world",
+                summary=f"World '{world.name}' created",
+            )
+        )
 
         # Step 2: Faction design
         factions = await self.architect.design_factions(config, world)
-        state.agent_log.append(AgentLogEntry(
-            agent="architect", phase="design_factions",
-            summary=f"{len(factions)} factions designed",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="architect",
+                phase="design_factions",
+                summary=f"{len(factions)} factions designed",
+            )
+        )
 
         # Step 3: Style contract
         style = await self.architect.create_style_contract(config)
-        state.agent_log.append(AgentLogEntry(
-            agent="architect", phase="create_style_contract",
-            summary=f"Style contract: {style.tone}",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="architect",
+                phase="create_style_contract",
+                summary=f"Style contract: {style.tone}",
+            )
+        )
 
         # Step 4: Themes and conflicts
         themes = await self.architect.generate_themes(config, world)
         conflicts = await self.architect.define_conflicts(config, world, factions)
-        state.agent_log.append(AgentLogEntry(
-            agent="architect", phase="generate_themes",
-            summary=f"{len(themes)} themes, {len(conflicts)} conflicts",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="architect",
+                phase="generate_themes",
+                summary=f"{len(themes)} themes, {len(conflicts)} conflicts",
+            )
+        )
 
         # Step 5: Pleasure points
         pleasure_model, constraints = await self.architect.design_pleasure_points(
-            config, world, themes,
+            config,
+            world,
+            themes,
         )
 
         # Assemble bible
         from ..models.bible import NarrativeRules
+
         bible = NovelBible(
-            world=world, factions=factions, rules=NarrativeRules(),
-            style_contract=style, themes=themes, core_conflicts=conflicts,
-            pleasure_point_model=pleasure_model, narrative_constraints=constraints,
+            world=world,
+            factions=factions,
+            rules=NarrativeRules(),
+            style_contract=style,
+            themes=themes,
+            core_conflicts=conflicts,
+            pleasure_point_model=pleasure_model,
+            narrative_constraints=constraints,
         )
         state.bible = bible
         # Persist enriched config so downstream phases (characters, outline)
@@ -571,15 +638,21 @@ class OrchestratorAgent:
         state.current_phase = "character_creation"
 
         characters = await self.character_manager.create_all_characters(
-            state.project_config, state.bible,
+            state.project_config,
+            state.bible,
         )
         state.characters = characters
-        state.agent_log.append(AgentLogEntry(
-            agent="character_manager", phase="create_all_characters",
-            summary=f"{len(characters.characters)} characters created",
-        ))
-        logger.info(f"Bible construction complete: {len(state.bible.factions)} factions, "
-                     f"{len(characters.characters)} characters")
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="character_manager",
+                phase="create_all_characters",
+                summary=f"{len(characters.characters)} characters created",
+            )
+        )
+        logger.info(
+            f"Bible construction complete: {len(state.bible.factions)} factions, "
+            f"{len(characters.characters)} characters"
+        )
         return state
 
     # ================================================================
@@ -599,11 +672,13 @@ class OrchestratorAgent:
         state.outline = outline
         state.total_chapters = outline.chapter_count
 
-        state.agent_log.append(AgentLogEntry(
-            agent="plot_planner",
-            phase="create_master_outline",
-            summary=f"Outline: {outline.title}, {outline.chapter_count} chapters",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="plot_planner",
+                phase="create_master_outline",
+                summary=f"Outline: {outline.title}, {outline.chapter_count} chapters",
+            )
+        )
 
         # Update project title if not set
         if state.project_meta and not state.project_meta.title and outline.title:
@@ -632,11 +707,13 @@ class OrchestratorAgent:
         state.chapter_plan = plan
         state.current_chapter_number = chapter_num
 
-        state.agent_log.append(AgentLogEntry(
-            agent="plot_planner",
-            phase="plan_chapter",
-            summary=f"Chapter {chapter_num}: {plan.title}, {len(plan.scenes)} scenes",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="plot_planner",
+                phase="plan_chapter",
+                summary=f"Chapter {chapter_num}: {plan.title}, {len(plan.scenes)} scenes",
+            )
+        )
 
         return state
 
@@ -684,6 +761,7 @@ class OrchestratorAgent:
 
         # ── Content safety check (deterministic, no LLM cost) ──
         from ..utils.content_safety import ContentSafetyChecker
+
         safety_checker = ContentSafetyChecker()
         safety_result = safety_checker.check(
             draft.content,
@@ -691,36 +769,28 @@ class OrchestratorAgent:
         )
         if not safety_result.passed:
             logger.error(
-                f"Chapter {draft.chapter_number}: Content safety BLOCKED — "
-                f"{safety_result.block_count} blocking flag(s)"
+                f"Chapter {draft.chapter_number}: Content safety BLOCKED — {safety_result.block_count} blocking flag(s)"
             )
-            state.errors.append(
-                f"Chapter {draft.chapter_number} blocked by content safety: "
-                f"{safety_result.summary}"
-            )
+            state.errors.append(f"Chapter {draft.chapter_number} blocked by content safety: {safety_result.summary}")
         elif safety_result.warning_count > 0:
-            logger.warning(
-                f"Chapter {draft.chapter_number}: Content safety warnings — "
-                f"{safety_result.summary}"
-            )
+            logger.warning(f"Chapter {draft.chapter_number}: Content safety warnings — {safety_result.summary}")
 
         state.chapter_draft = draft
-        state.agent_log.append(AgentLogEntry(
-            agent="writer",
-            phase="generate_chapter",
-            summary=f"Chapter {draft.chapter_number}: {draft.word_count} chars, "
-                     f"{len(draft.new_facts)} facts | "
-                     f"Inspection: {'PASS' if inspection.passed else 'FAIL'} "
-                     f"({len(inspection.issues)} issues, {len(inspection.warnings)} warnings) | "
-                     f"Safety: {'PASS' if safety_result.passed else 'BLOCKED'} "
-                     f"({safety_result.warning_count} warnings, {safety_result.block_count} blocks)",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="writer",
+                phase="generate_chapter",
+                summary=f"Chapter {draft.chapter_number}: {draft.word_count} chars, "
+                f"{len(draft.new_facts)} facts | "
+                f"Inspection: {'PASS' if inspection.passed else 'FAIL'} "
+                f"({len(inspection.issues)} issues, {len(inspection.warnings)} warnings) | "
+                f"Safety: {'PASS' if safety_result.passed else 'BLOCKED'} "
+                f"({safety_result.warning_count} warnings, {safety_result.block_count} blocks)",
+            )
+        )
 
         if not inspection.passed:
-            logger.warning(
-                f"Chapter {draft.chapter_number} structural issues: "
-                f"{inspection.format_report(inspection)}"
-            )
+            logger.warning(f"Chapter {draft.chapter_number} structural issues: {inspection.format_report(inspection)}")
 
         return state
 
@@ -795,9 +865,7 @@ class OrchestratorAgent:
 
                 # Add reader feedback as dimension
                 if reader_feedback:
-                    report.dimension_scores["reader_engagement"] = reader_feedback.get(
-                        "engagement_score", 7.0
-                    )
+                    report.dimension_scores["reader_engagement"] = reader_feedback.get("engagement_score", 7.0)
                     report.dimension_scores["continuation_likelihood"] = reader_feedback.get(
                         "continuation_likelihood", 7.0
                     )
@@ -810,9 +878,7 @@ class OrchestratorAgent:
                     report.strengths.extend(adv_report.strengths)
                     report.suggestions.extend(adv_report.suggestions)
                     # Add adversarial-specific dimensions
-                    report.dimension_scores["adversarial_plot"] = (
-                        10.0 - len(adversarial.plot_holes) * 2
-                    )
+                    report.dimension_scores["adversarial_plot"] = 10.0 - len(adversarial.plot_holes) * 2
                     report.dimension_scores["adversarial_character"] = (
                         10.0 - len(adversarial.character_inconsistencies) * 2
                     )
@@ -834,12 +900,14 @@ class OrchestratorAgent:
                     # If adversarial reviewer demands revision, override pass/fail
                     if adversarial.revision_required:
                         report.passed = False
-                        report.issues.append(Issue(
-                            severity="critical",
-                            category="adversarial_review",
-                            description="对抗性审稿要求强制修订",
-                            suggestion="请根据对抗性审稿意见进行修订",
-                        ))
+                        report.issues.append(
+                            Issue(
+                                severity="critical",
+                                category="adversarial_review",
+                                description="对抗性审稿要求强制修订",
+                                suggestion="请根据对抗性审稿意见进行修订",
+                            )
+                        )
 
                 # Recalculate pass/fail
                 if not adversarial or not (
@@ -862,19 +930,23 @@ class OrchestratorAgent:
             state.review_report = report
 
         if state.review_report:
-            state.agent_log.append(AgentLogEntry(
-                agent="editor",
-                phase="review_chapter",
-                summary=f"Score: {state.review_report.overall_score:.1f}, "
-                         f"passed={state.review_report.passed}, "
-                         f"issues={len(state.review_report.issues)}",
-            ))
+            state.agent_log.append(
+                AgentLogEntry(
+                    agent="editor",
+                    phase="review_chapter",
+                    summary=f"Score: {state.review_report.overall_score:.1f}, "
+                    f"passed={state.review_report.passed}, "
+                    f"issues={len(state.review_report.issues)}",
+                )
+            )
         else:
-            state.agent_log.append(AgentLogEntry(
-                agent="editor",
-                phase="review_chapter",
-                summary="Review failed to produce a report",
-            ))
+            state.agent_log.append(
+                AgentLogEntry(
+                    agent="editor",
+                    phase="review_chapter",
+                    summary="Review failed to produce a report",
+                )
+            )
 
         return state
 
@@ -895,11 +967,13 @@ class OrchestratorAgent:
         )
 
         state.polished_chapter = polished
-        state.agent_log.append(AgentLogEntry(
-            agent="refiner",
-            phase="polish_chapter",
-            summary=f"Polished: {polished.word_count} chars, notes: {polished.revision_notes[:100]}",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="refiner",
+                phase="polish_chapter",
+                summary=f"Polished: {polished.word_count} chars, notes: {polished.revision_notes[:100]}",
+            )
+        )
 
         return state
 
@@ -921,11 +995,13 @@ class OrchestratorAgent:
         )
 
         state.memory = memory
-        state.agent_log.append(AgentLogEntry(
-            agent="memory_manager",
-            phase="update_memory",
-            summary=f"Memory updated: {len(memory.long_term.chapter_summaries)} chapter summaries, "
-                     f"{len(memory.timeline)} timeline events",
-        ))
+        state.agent_log.append(
+            AgentLogEntry(
+                agent="memory_manager",
+                phase="update_memory",
+                summary=f"Memory updated: {len(memory.long_term.chapter_summaries)} chapter summaries, "
+                f"{len(memory.timeline)} timeline events",
+            )
+        )
 
         return state

@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 # Structured output schemas
 # ============================================================
 
+
 def _normalize_str_list(value: Any) -> list[str]:
     """Normalise a field that should be list[str] but may arrive as a string."""
     if value is None:
@@ -58,6 +59,7 @@ def _normalize_optional_str(value: Any) -> Optional[str]:
 
 class WorldBuildingOutput(BaseModel):
     """LLM output schema for world building."""
+
     name: str = Field(..., description="世界名称")
     world_type: str = Field(..., description="世界类型")
     geography: str = Field(default="", description="地理环境")
@@ -81,11 +83,13 @@ class WorldBuildingOutput(BaseModel):
 
 class FactionsOutput(BaseModel):
     """LLM output schema for faction design."""
+
     factions: list[Faction] = Field(default_factory=list)
 
 
 class StyleContractOutput(BaseModel):
     """LLM output schema for style contract."""
+
     tone: str = Field(default="", description="语调")
     pacing_preference: str = Field(default="medium", description="节奏偏好")
     sentence_style: str = Field(default="varied", description="句式风格")
@@ -98,16 +102,19 @@ class StyleContractOutput(BaseModel):
 
 class ThemesOutput(BaseModel):
     """LLM output schema for themes."""
+
     themes: list[Theme] = Field(default_factory=list)
 
 
 class ConflictsOutput(BaseModel):
     """LLM output schema for core conflicts."""
+
     conflicts: list[CoreConflict] = Field(default_factory=list)
 
 
 class PleasurePointOutput(BaseModel):
     """LLM output schema for pleasure point design."""
+
     pleasure_point_model: str = Field(default="", description="爽点模型描述")
     narrative_constraints: list[str] = Field(default_factory=list, description="叙事约束")
 
@@ -115,6 +122,7 @@ class PleasurePointOutput(BaseModel):
 # ============================================================
 # Agent
 # ============================================================
+
 
 class ArchitectAgent(BaseAgent):
     """Designs the world, factions, style contract, themes, and conflicts.
@@ -134,7 +142,7 @@ class ArchitectAgent(BaseAgent):
         system = self.build_system_prompt(
             role="世界观架构师",
             expertise="构建宏大、自洽、有深度的虚构世界。擅长设计地理、历史、文化、力量体系，"
-                      "并能确保世界观服务于故事主题和爽点。",
+            "并能确保世界观服务于故事主题和爽点。",
         )
 
         user = f"""请为以下小说创意构建完整的世界观设定：
@@ -142,7 +150,7 @@ class ArchitectAgent(BaseAgent):
 【灵感/创意】
 {config.inspiration}
 
-【题材】{', '.join(config.genre)}
+【题材】{", ".join(config.genre)}
 【目标读者】{config.target_readers}
 【篇幅】{config.target_length.value}（约{config.target_word_count}字）
 【语调】{config.tone}
@@ -194,7 +202,7 @@ class ArchitectAgent(BaseAgent):
         system = self.build_system_prompt(
             role="势力架构师",
             expertise="设计有深度、有冲突、有层次的组织势力。每个势力应有明确的目标、"
-                      "内部结构、资源掌控和与其他势力的关系。",
+            "内部结构、资源掌控和与其他势力的关系。",
         )
 
         world_summary = json.dumps(world.model_dump(), ensure_ascii=False, indent=2)
@@ -203,7 +211,7 @@ class ArchitectAgent(BaseAgent):
 【世界观】
 {world_summary}
 
-【题材】{', '.join(config.genre)}
+【题材】{", ".join(config.genre)}
 【目标读者】{config.target_readers}
 
 要求：
@@ -231,17 +239,16 @@ class ArchitectAgent(BaseAgent):
         """Define the writing style contract for the novel."""
         system = self.build_system_prompt(
             role="文风设计师",
-            expertise="为小说定义统一的文风契约。精通各类文学风格，能根据题材和目标读者"
-                      "精准定位最适合的文风参数。",
+            expertise="为小说定义统一的文风契约。精通各类文学风格，能根据题材和目标读者精准定位最适合的文风参数。",
         )
 
         user = f"""请为以下小说定义「文风契约」：
 
 【灵感】{config.inspiration}
-【题材】{', '.join(config.genre)}
+【题材】{", ".join(config.genre)}
 【目标读者】{config.target_readers}
 【语调】{config.tone}
-【风格参考】{config.style_reference or '无特定参考'}
+【风格参考】{config.style_reference or "无特定参考"}
 
 请确定：
 1. 整体语调（dark/light/gritty/whimsical 等）
@@ -288,7 +295,7 @@ class ArchitectAgent(BaseAgent):
         user = f"""基于以下信息，为小说提炼 3-5 个核心主题：
 
 【灵感】{config.inspiration}
-【题材】{', '.join(config.genre)}
+【题材】{", ".join(config.genre)}
 【世界观】{world.name} - {world.world_type}
 
 每个主题需要：
@@ -315,14 +322,14 @@ class ArchitectAgent(BaseAgent):
         system = self.build_system_prompt(
             role="冲突架构师",
             expertise="设计推动故事发展的核心冲突。理解不同类型冲突（人与人、人与社会、"
-                      "人与自我、人与自然）的叙事功能。",
+            "人与自我、人与自然）的叙事功能。",
         )
 
         factions_summary = json.dumps([f.model_dump() for f in factions], ensure_ascii=False, indent=2)
         user = f"""基于以下信息，设计 3-5 个核心冲突：
 
 【灵感】{config.inspiration}
-【题材】{', '.join(config.genre)}
+【题材】{", ".join(config.genre)}
 【世界观】{world.name}
 【势力】{factions_summary}
 
@@ -359,14 +366,13 @@ class ArchitectAgent(BaseAgent):
         """Design the pleasure point model and narrative constraints."""
         system = self.build_system_prompt(
             role="爽点架构师",
-            expertise="精通网文和小说的爽点设计。理解不同类型读者的阅读期待，"
-                      "能设计出令人欲罢不能的阅读体验节奏。",
+            expertise="精通网文和小说的爽点设计。理解不同类型读者的阅读期待，能设计出令人欲罢不能的阅读体验节奏。",
         )
 
         user = f"""为以下小说设计「爽点模型」和「叙事约束」：
 
 【灵感】{config.inspiration}
-【题材】{', '.join(config.genre)}
+【题材】{", ".join(config.genre)}
 【目标读者】{config.target_readers}
 【世界观类型】{world.world_type}"""
 

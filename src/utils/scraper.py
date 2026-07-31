@@ -241,9 +241,7 @@ def _format_feilu_books(books: list[dict]) -> str:
 # ================================================================
 
 
-async def _fetch_fanqie_rank(
-    rank_type: int, gender: int, limit: int = 10
-) -> list[dict]:
+async def _fetch_fanqie_rank(rank_type: int, gender: int, limit: int = 10) -> list[dict]:
     """Fetch one page of a Fanqie JSON API ranking list."""
     headers = {**HEADERS, "Referer": "https://fanqienovel.com/rank"}
     books = []
@@ -300,7 +298,9 @@ async def scrape_fanqie_rank() -> Optional[str]:
     tasks = [_fetch_category(rt, g, lbl) for rt, g, lbl in FANQIE_RANK_CATEGORIES]
     await asyncio.gather(*tasks)
 
-    logger.info(f"Fanqie multi-category API: {len(all_books)} unique books from {len(FANQIE_RANK_CATEGORIES)} categories")
+    logger.info(
+        f"Fanqie multi-category API: {len(all_books)} unique books from {len(FANQIE_RANK_CATEGORIES)} categories"
+    )
 
     # ---------------------------------------------------------------
     # Strategy 2: SSR book ID extraction + detail API lookup
@@ -456,7 +456,7 @@ def _format_fanqie_books(books: list[dict]) -> str:
         name = b.get("bookName", b.get("title", "未知"))
         author = b.get("author", "未知")
         abstract = (b.get("abstract", b.get("description", "")) or "")[:200]
-        lines.append(f"#{i+1} 《{name}》 作者：{author}")
+        lines.append(f"#{i + 1} 《{name}》 作者：{author}")
         if abstract:
             lines.append(f"    简介：{abstract}")
     return "\n".join(lines)
@@ -465,6 +465,7 @@ def _format_fanqie_books(books: list[dict]) -> str:
 async def scrape_all() -> dict[str, Optional[str]]:
     """Scrape both platforms concurrently."""
     import asyncio
+
     feilu_task = scrape_feilu_rank()
     fanqie_task = scrape_fanqie_rank()
     feilu_html, fanqie_html = await asyncio.gather(feilu_task, fanqie_task)

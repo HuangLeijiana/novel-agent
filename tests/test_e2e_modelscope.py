@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 # Shared fixtures
 # ═══════════════════════════════════════════════════════════════════════
 
+
 @pytest.fixture(scope="module")
 def scheduler():
     return ModelScheduler()
@@ -63,6 +64,7 @@ def config():
 # ═══════════════════════════════════════════════════════════════════════
 # Phase 2: Bible Construction
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestPhase2Bible:
     """Phase 2: Build the complete Novel Bible."""
@@ -109,9 +111,14 @@ class TestPhase2Bible:
 
         # Assemble bible
         bible = NovelBible(
-            world=world, factions=factions, rules=NarrativeRules(),
-            style_contract=style, themes=themes, core_conflicts=conflicts,
-            pleasure_point_model=pleasure_model, narrative_constraints=constraints,
+            world=world,
+            factions=factions,
+            rules=NarrativeRules(),
+            style_contract=style,
+            themes=themes,
+            core_conflicts=conflicts,
+            pleasure_point_model=pleasure_model,
+            narrative_constraints=constraints,
         )
 
         # Step 6: Characters
@@ -121,9 +128,11 @@ class TestPhase2Bible:
             print(f"    [{cid}] {c.name} ({c.role}) — {c.personality[:40]}...")
 
         elapsed = time.time() - t0
-        print(f"\n  [TIME] Bible assembled in {elapsed:.0f}s: "
-              f"{len(factions)} factions, {len(registry.characters)} characters, "
-              f"{len(themes)} themes, {len(conflicts)} conflicts")
+        print(
+            f"\n  [TIME] Bible assembled in {elapsed:.0f}s: "
+            f"{len(factions)} factions, {len(registry.characters)} characters, "
+            f"{len(themes)} themes, {len(conflicts)} conflicts"
+        )
 
         assert len(factions) >= 2
         assert len(registry.characters) >= 2
@@ -134,6 +143,7 @@ class TestPhase2Bible:
 # ═══════════════════════════════════════════════════════════════════════
 # Phase 3: Master Outline
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestPhase3Outline:
     """Phase 3: Generate the master outline."""
@@ -152,9 +162,14 @@ class TestPhase3Outline:
         pleasure_model, constraints = await architect.design_pleasure_points(config, world, themes)
 
         bible = NovelBible(
-            world=world, factions=factions, rules=NarrativeRules(),
-            style_contract=style, themes=themes, core_conflicts=conflicts,
-            pleasure_point_model=pleasure_model, narrative_constraints=constraints,
+            world=world,
+            factions=factions,
+            rules=NarrativeRules(),
+            style_contract=style,
+            themes=themes,
+            core_conflicts=conflicts,
+            pleasure_point_model=pleasure_model,
+            narrative_constraints=constraints,
         )
         registry = await char_mgr.create_all_characters(config, bible)
         return bible, registry
@@ -167,7 +182,9 @@ class TestPhase3Outline:
         t0 = time.time()
 
         outline = await plot_planner.create_master_outline(
-            config=config, bible=bible, characters=characters,
+            config=config,
+            bible=bible,
+            characters=characters,
         )
 
         elapsed = time.time() - t0
@@ -195,6 +212,7 @@ class TestPhase3Outline:
 # Phase 4: Chapter Planning
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestPhase4ChapterPlanning:
     """Phase 4: Plan individual chapters."""
 
@@ -213,9 +231,14 @@ class TestPhase4ChapterPlanning:
         conflicts = await architect.define_conflicts(config, world, factions)
         pleasure_model, constraints = await architect.design_pleasure_points(config, world, themes)
         bible = NovelBible(
-            world=world, factions=factions, rules=NarrativeRules(),
-            style_contract=style, themes=themes, core_conflicts=conflicts,
-            pleasure_point_model=pleasure_model, narrative_constraints=constraints,
+            world=world,
+            factions=factions,
+            rules=NarrativeRules(),
+            style_contract=style,
+            themes=themes,
+            core_conflicts=conflicts,
+            pleasure_point_model=pleasure_model,
+            narrative_constraints=constraints,
         )
         characters = await char_mgr.create_all_characters(config, bible)
         outline = await plot_planner.create_master_outline(config, bible, characters)
@@ -229,7 +252,10 @@ class TestPhase4ChapterPlanning:
 
         plan = await plot_planner.plan_chapter(
             chapter_number=1,
-            config=config, bible=bible, characters=characters, outline=outline,
+            config=config,
+            bible=bible,
+            characters=characters,
+            outline=outline,
         )
 
         elapsed = time.time() - t0
@@ -259,6 +285,7 @@ class TestPhase4ChapterPlanning:
 # Phase 5: Chapter Writing
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestPhase5Writing:
     """Phase 5: Write chapter drafts."""
 
@@ -278,9 +305,14 @@ class TestPhase5Writing:
         conflicts = await architect.define_conflicts(config, world, factions)
         pleasure_model, constraints = await architect.design_pleasure_points(config, world, themes)
         bible = NovelBible(
-            world=world, factions=factions, rules=NarrativeRules(),
-            style_contract=style, themes=themes, core_conflicts=conflicts,
-            pleasure_point_model=pleasure_model, narrative_constraints=constraints,
+            world=world,
+            factions=factions,
+            rules=NarrativeRules(),
+            style_contract=style,
+            themes=themes,
+            core_conflicts=conflicts,
+            pleasure_point_model=pleasure_model,
+            narrative_constraints=constraints,
         )
         characters = await char_mgr.create_all_characters(config, bible)
         outline = await plot_planner.create_master_outline(config, bible, characters)
@@ -294,8 +326,11 @@ class TestPhase5Writing:
         t0 = time.time()
 
         draft = await writer.generate_chapter(
-            chapter_plan=plan, config=config, bible=bible,
-            characters=characters, outline=outline,
+            chapter_plan=plan,
+            config=config,
+            bible=bible,
+            characters=characters,
+            outline=outline,
         )
 
         elapsed = time.time() - t0
@@ -320,8 +355,11 @@ class TestPhase5Writing:
 
         # Write
         draft = await writer.generate_chapter(
-            chapter_plan=plan, config=config, bible=bible,
-            characters=characters, outline=outline,
+            chapter_plan=plan,
+            config=config,
+            bible=bible,
+            characters=characters,
+            outline=outline,
         )
         print(f"  [OK] Written: {draft.word_count} chars")
 
@@ -341,6 +379,7 @@ class TestPhase5Writing:
 # ═══════════════════════════════════════════════════════════════════════
 # Full Pipeline: All phases in sequence
 # ═══════════════════════════════════════════════════════════════════════
+
 
 @pytest.mark.asyncio
 async def test_full_pipeline(scheduler, config):
@@ -381,9 +420,14 @@ async def test_full_pipeline(scheduler, config):
         print(f"| Pleasure model: [OK]")
 
         bible = NovelBible(
-            world=world, factions=factions, rules=NarrativeRules(),
-            style_contract=style, themes=themes, core_conflicts=conflicts,
-            pleasure_point_model=pleasure_model, narrative_constraints=constraints,
+            world=world,
+            factions=factions,
+            rules=NarrativeRules(),
+            style_contract=style,
+            themes=themes,
+            core_conflicts=conflicts,
+            pleasure_point_model=pleasure_model,
+            narrative_constraints=constraints,
         )
 
         characters = await char_mgr.create_all_characters(config, bible)
@@ -446,8 +490,11 @@ async def test_full_pipeline(scheduler, config):
     t0 = time.time()
     try:
         draft = await writer.generate_chapter(
-            chapter_plan=plan, config=config, bible=bible,
-            characters=characters, outline=outline,
+            chapter_plan=plan,
+            config=config,
+            bible=bible,
+            characters=characters,
+            outline=outline,
         )
         assert isinstance(draft, ChapterDraft)
         assert draft.content, "Chapter must have content"
@@ -478,7 +525,7 @@ async def test_full_pipeline(scheduler, config):
     # === Summary ===
     total = time.time() - pipeline_start
     print("\n" + "=" * 70)
-    print(f"=  PIPELINE COMPLETE in {total:.0f}s ({total/60:.1f}m)")
+    print(f"=  PIPELINE COMPLETE in {total:.0f}s ({total / 60:.1f}m)")
     print(f"=  Phases: 2[OK] 3[OK] 4[OK] 5[OK]")
     print(f"=  Output: Chapter 1 -- '{draft.title}' ({draft.word_count} chars)")
     print(f"=  Facts: {len(draft.new_facts)} | State changes: {len(draft.character_state_changes)}")
@@ -492,6 +539,7 @@ async def test_full_pipeline(scheduler, config):
 # ═══════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
+
     async def main():
         logging.basicConfig(level=logging.INFO)
         s = ModelScheduler()

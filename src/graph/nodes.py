@@ -25,6 +25,7 @@ async def _get_orchestrator(config: dict) -> OrchestratorAgent:
 # Phase Nodes
 # ================================================================
 
+
 async def project_init_node(state: MainState, config: dict = None) -> dict[str, Any]:
     """Phase 1: Initialize project structure and metadata."""
     logger.info("Node: project_init")
@@ -86,8 +87,9 @@ async def chapter_writing_node(state: MainState, config: dict = None) -> dict[st
 
 async def quality_review_node(state: MainState, config: dict = None) -> dict[str, Any]:
     """Phase 6: Run quality reviews — editor, continuity, reader simulation."""
-    logger.info(f"Node: quality_review (chapter {state.current_chapter_number}, "
-                f"iteration {state.review_iteration + 1})")
+    logger.info(
+        f"Node: quality_review (chapter {state.current_chapter_number}, iteration {state.review_iteration + 1})"
+    )
     orchestrator = await _get_orchestrator(config or {})
     updated_state = await orchestrator.review_chapter(state)
     return {

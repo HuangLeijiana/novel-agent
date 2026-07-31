@@ -47,14 +47,21 @@ class ModelAssignment(BaseModel):
 
 # Creative / high-quality agents: worth spending on a good model
 QUALITY_AGENTS = {
-    "architect", "character_manager", "plot_planner",
-    "writer", "reviewer", "topic_scout",
+    "architect",
+    "character_manager",
+    "plot_planner",
+    "writer",
+    "reviewer",
+    "topic_scout",
 }
 
 # Analytical / checking agents: can use a cheaper model
 BUDGET_AGENTS = {
-    "editor", "continuity_checker", "reader_simulator",
-    "memory_manager", "refiner",
+    "editor",
+    "continuity_checker",
+    "reader_simulator",
+    "memory_manager",
+    "refiner",
 }
 
 # Orchestrator is lightweight
@@ -67,20 +74,20 @@ ORCHESTRATOR_AGENTS = {"orchestrator"}
 
 AGENT_CONFIGS: dict[str, dict] = {
     # Creative agents — higher temperature for variety
-    "architect":      {"temperature": 0.8, "max_tokens": 8192,  "tier": "quality"},
-    "character_manager": {"temperature": 0.7, "max_tokens": 8192,  "tier": "quality"},
-    "plot_planner":   {"temperature": 0.7, "max_tokens": 8192,  "tier": "quality"},
-    "writer":         {"temperature": 0.9, "max_tokens": 16384, "tier": "quality"},
-    "reviewer":       {"temperature": 0.4, "max_tokens": 4096,  "tier": "quality"},
-    "topic_scout":    {"temperature": 0.5, "max_tokens": 8192,  "tier": "quality"},
+    "architect": {"temperature": 0.8, "max_tokens": 8192, "tier": "quality"},
+    "character_manager": {"temperature": 0.7, "max_tokens": 8192, "tier": "quality"},
+    "plot_planner": {"temperature": 0.7, "max_tokens": 8192, "tier": "quality"},
+    "writer": {"temperature": 0.9, "max_tokens": 16384, "tier": "quality"},
+    "reviewer": {"temperature": 0.4, "max_tokens": 4096, "tier": "quality"},
+    "topic_scout": {"temperature": 0.5, "max_tokens": 8192, "tier": "quality"},
     # Analytical agents — lower temperature for consistency
-    "editor":              {"temperature": 0.3, "max_tokens": 4096,  "tier": "budget"},
-    "continuity_checker":  {"temperature": 0.3, "max_tokens": 4096,  "tier": "budget"},
-    "reader_simulator":    {"temperature": 0.5, "max_tokens": 2048,  "tier": "budget"},
-    "memory_manager":      {"temperature": 0.3, "max_tokens": 4096,  "tier": "budget"},
-    "refiner":             {"temperature": 0.4, "max_tokens": 8192,  "tier": "budget"},
+    "editor": {"temperature": 0.3, "max_tokens": 4096, "tier": "budget"},
+    "continuity_checker": {"temperature": 0.3, "max_tokens": 4096, "tier": "budget"},
+    "reader_simulator": {"temperature": 0.5, "max_tokens": 2048, "tier": "budget"},
+    "memory_manager": {"temperature": 0.3, "max_tokens": 4096, "tier": "budget"},
+    "refiner": {"temperature": 0.4, "max_tokens": 8192, "tier": "budget"},
     # Orchestrator
-    "orchestrator":   {"temperature": 0.3, "max_tokens": 2048,  "tier": "budget"},
+    "orchestrator": {"temperature": 0.3, "max_tokens": 2048, "tier": "budget"},
 }
 
 
@@ -179,13 +186,15 @@ def get_default_assignments() -> list[ModelAssignment]:
 
     for agent_type, config in AGENT_CONFIGS.items():
         provider, model, fallback = _resolve_provider_model(agent_type, settings)
-        assignments.append(ModelAssignment(
-            agent_type=agent_type,
-            provider=provider,
-            primary_model=model,
-            fallback_model=fallback,
-            temperature=config["temperature"],
-            max_tokens=config["max_tokens"],
-        ))
+        assignments.append(
+            ModelAssignment(
+                agent_type=agent_type,
+                provider=provider,
+                primary_model=model,
+                fallback_model=fallback,
+                temperature=config["temperature"],
+                max_tokens=config["max_tokens"],
+            )
+        )
 
     return assignments

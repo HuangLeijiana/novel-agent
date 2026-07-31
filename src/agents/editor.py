@@ -21,8 +21,10 @@ logger = logging.getLogger(__name__)
 # Structured output schemas
 # ============================================================
 
+
 class ReviewOutput(BaseModel):
     """LLM output for quality review."""
+
     overall_score: float = Field(default=7.0, ge=0.0, le=10.0)
     dimension_scores: dict[str, float] = Field(default_factory=dict)
     issues: list[Issue] = Field(default_factory=list)
@@ -32,11 +34,13 @@ class ReviewOutput(BaseModel):
 
 class ConsistencyOutput(BaseModel):
     """LLM output for continuity/consistency check."""
+
     issues: list[Issue] = Field(default_factory=list)
 
 
 class AiFlavorOutput(BaseModel):
     """LLM output for AI-flavor detection."""
+
     score: float = Field(default=8.0, ge=0.0, le=10.0, description="AI味评分（越高越自然）")
     issues: list[Issue] = Field(default_factory=list)
 
@@ -44,6 +48,7 @@ class AiFlavorOutput(BaseModel):
 # ============================================================
 # Agent
 # ============================================================
+
 
 class EditorAgent(BaseAgent):
     """Performs multi-dimensional quality review of chapter drafts.
@@ -79,15 +84,12 @@ class EditorAgent(BaseAgent):
         # Combine into a comprehensive review
         system = self.build_system_prompt(
             role="主编审",
-            expertise="对小说章节进行全面的质量审查。你能从多个维度给出精准的评分和"
-                      "有建设性的修改建议。",
+            expertise="对小说章节进行全面的质量审查。你能从多个维度给出精准的评分和有建设性的修改建议。",
         )
 
         all_issues = consistency_issues + pacing_issues + style_issues + ai_flavor_result.issues
 
-        issues_text = "\n".join(
-            f"[{i.severity}][{i.category}] {i.description}" for i in all_issues
-        )
+        issues_text = "\n".join(f"[{i.severity}][{i.category}] {i.description}" for i in all_issues)
 
         user = f"""请对第{draft.chapter_number}章进行综合评审：
 
@@ -102,7 +104,7 @@ class EditorAgent(BaseAgent):
 {draft.content[-500:] if len(draft.content) > 500 else draft.content}
 
 【已发现的问题】
-{issues_text or '无特定问题'}
+{issues_text or "无特定问题"}
 
 请给出：
 1. 总体评分（0-10）
@@ -146,8 +148,10 @@ class EditorAgent(BaseAgent):
             passed=passed,
         )
 
-        logger.info(f"Chapter {draft.chapter_number} review: score={report.overall_score}, "
-                     f"passed={report.passed}, issues={len(report.issues)}")
+        logger.info(
+            f"Chapter {draft.chapter_number} review: score={report.overall_score}, "
+            f"passed={report.passed}, issues={len(report.issues)}"
+        )
         return report
 
     # ================================================================
@@ -171,15 +175,13 @@ class EditorAgent(BaseAgent):
         known_facts = ""
         if memory and memory.long_term:
             facts_list = list(memory.long_term.facts.values())
-            known_facts = "\n".join(
-                f"- [{f.category}] {f.description}" for f in facts_list[:20]
-            )
+            known_facts = "\n".join(f"- [{f.category}] {f.description}" for f in facts_list[:20])
 
         user = f"""检查以下章节是否存在一致性问题：
 
-【世界观规则】{bible.rules.model_dump_json() if bible.rules else '无特定规则'}
+【世界观规则】{bible.rules.model_dump_json() if bible.rules else "无特定规则"}
 【角色性格摘要】{self._format_character_briefs(characters)}
-【已知事实】{known_facts or '无（第一章）'}
+【已知事实】{known_facts or "无（第一章）"}
 
 【章节内容（摘要）】
 {self._summarize_chapter(draft)}
@@ -207,7 +209,7 @@ class EditorAgent(BaseAgent):
         system = self.build_system_prompt(
             role="节奏分析员",
             expertise="分析小说章节的叙事节奏。能判断场景推进速度是否合理，"
-                      "情绪起伏是否有层次，是否出现拖沓或过快的段落。",
+            "情绪起伏是否有层次，是否出现拖沓或过快的段落。",
         )
 
         user = f"""分析以下章节的叙事节奏：
@@ -244,8 +246,7 @@ class EditorAgent(BaseAgent):
         style = bible.style_contract
         system = self.build_system_prompt(
             role="文风检查员",
-            expertise="精确判断小说文本是否遵守了文风契约。能发现句式重复、用词不当、"
-                      "语调偏离等问题。",
+            expertise="精确判断小说文本是否遵守了文风契约。能发现句式重复、用词不当、语调偏离等问题。",
         )
 
         user = f"""检查以下章节是否符合文风契约：
@@ -258,7 +259,7 @@ class EditorAgent(BaseAgent):
 - 推荐技法：{style.preferred_techniques}
 
 【章节样本（中间段落）】
-{draft.content[len(draft.content)//2 - 300 : len(draft.content)//2 + 300]}
+{draft.content[len(draft.content) // 2 - 300 : len(draft.content) // 2 + 300]}
 
 请找出：
 - 句式重复（如连续使用相同句式结构）
@@ -280,7 +281,7 @@ class EditorAgent(BaseAgent):
         system = self.build_system_prompt(
             role="AI文本检测专家",
             expertise="你能精确识别AI生成文本的典型特征：机械的过渡词、过于工整的结构、"
-                      "缺乏真实情感波动、套路化的表达方式、过度使用某些连接词等。",
+            "缺乏真实情感波动、套路化的表达方式、过度使用某些连接词等。",
         )
 
         user = f"""请分析以下文本的"AI味"程度：

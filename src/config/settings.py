@@ -71,7 +71,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    openai_base_url: str = ""   # Override for OpenAI-compatible APIs (ModelScope, DashScope, etc.)
+    openai_base_url: str = ""  # Override for OpenAI-compatible APIs (ModelScope, DashScope, etc.)
     ollama_base_url: str = "http://localhost:11434"
 
     # --- Default Model Configuration ---

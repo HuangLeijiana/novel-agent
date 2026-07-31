@@ -115,11 +115,7 @@ class PromptLoader:
         """List agent directories that have templates."""
         if not self._template_dir.exists():
             return []
-        return [
-            d.name
-            for d in self._template_dir.iterdir()
-            if d.is_dir() and not d.name.startswith("_")
-        ]
+        return [d.name for d in self._template_dir.iterdir() if d.is_dir() and not d.name.startswith("_")]
 
     def list_methods(self, agent: str) -> list[str]:
         """List methods that have both system + user templates for an agent."""

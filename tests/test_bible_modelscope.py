@@ -21,8 +21,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.config.settings import get_settings
 from src.llm.scheduler import ModelScheduler
 from src.models.bible import (
-    CoreConflict, Faction, NarrativeRules, NovelBible,
-    StyleContract, Theme, WorldBuilding,
+    CoreConflict,
+    Faction,
+    NarrativeRules,
+    NovelBible,
+    StyleContract,
+    Theme,
+    WorldBuilding,
 )
 from src.models.characters import CharacterProfile, CharacterRegistry
 from src.models.project import ProjectConfig
@@ -34,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 
 # ── Fixtures ────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def scheduler():
@@ -63,6 +69,7 @@ def config():
 
 
 # ── Individual Agent Tests ──────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_build_world(architect, config):
@@ -167,6 +174,7 @@ async def test_design_pleasure_points(architect, config):
 
 # ── Character Manager Tests ─────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_create_all_characters(character_manager, config, architect):
     """Test full character creation pipeline."""
@@ -205,6 +213,7 @@ async def test_create_all_characters(character_manager, config, architect):
 
 
 # ── Full Bible Assembly Test ────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_full_bible_assembly(architect, character_manager, config):
@@ -290,9 +299,11 @@ async def test_full_bible_assembly(architect, character_manager, config):
         pytest.fail(f"Characters: {type(e).__name__}: {e}")
         return
 
-    print(f"\n[OK] Bible assembled: {len(bible.factions)} factions, "
-          f"{len(registry.characters)} characters, "
-          f"{len(bible.themes)} themes, {len(bible.core_conflicts)} conflicts")
+    print(
+        f"\n[OK] Bible assembled: {len(bible.factions)} factions, "
+        f"{len(registry.characters)} characters, "
+        f"{len(bible.themes)} themes, {len(bible.core_conflicts)} conflicts"
+    )
 
     if errors:
         pytest.fail(f"Errors during assembly: {errors}")

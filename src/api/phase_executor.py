@@ -46,7 +46,8 @@ PHASE_TAB_MAP = {
 
 
 async def execute_phase_bible(
-    state: MainState, orchestrator: OrchestratorAgent,
+    state: MainState,
+    orchestrator: OrchestratorAgent,
     fm: ProjectFileManager,
 ) -> MainState:
     """Execute world-building phase."""
@@ -57,7 +58,8 @@ async def execute_phase_bible(
 
 
 async def execute_phase_characters(
-    state: MainState, orchestrator: OrchestratorAgent,
+    state: MainState,
+    orchestrator: OrchestratorAgent,
     fm: ProjectFileManager,
 ) -> MainState:
     """Execute character creation phase."""
@@ -68,7 +70,8 @@ async def execute_phase_characters(
 
 
 async def execute_phase_outline(
-    state: MainState, orchestrator: OrchestratorAgent,
+    state: MainState,
+    orchestrator: OrchestratorAgent,
     fm: ProjectFileManager,
 ) -> MainState:
     """Execute master outline phase."""
@@ -79,7 +82,8 @@ async def execute_phase_outline(
 
 
 async def execute_phase_chapter_planning(
-    state: MainState, orchestrator: OrchestratorAgent,
+    state: MainState,
+    orchestrator: OrchestratorAgent,
     fm: ProjectFileManager,
 ) -> MainState:
     """Execute chapter planning phase."""
@@ -90,7 +94,8 @@ async def execute_phase_chapter_planning(
 
 
 async def execute_phase_chapter_writing(
-    state: MainState, orchestrator: OrchestratorAgent,
+    state: MainState,
+    orchestrator: OrchestratorAgent,
     fm: ProjectFileManager,
     ws_manager,
     project_id: str,
@@ -103,7 +108,8 @@ async def execute_phase_chapter_writing(
 
 
 async def execute_phase_review(
-    state: MainState, orchestrator: OrchestratorAgent,
+    state: MainState,
+    orchestrator: OrchestratorAgent,
     fm: ProjectFileManager,
 ) -> MainState:
     """Execute quality review phase."""
@@ -114,7 +120,8 @@ async def execute_phase_review(
 
 
 async def execute_phase_polish(
-    state: MainState, orchestrator: OrchestratorAgent,
+    state: MainState,
+    orchestrator: OrchestratorAgent,
     fm: ProjectFileManager,
 ) -> MainState:
     """Execute polish/revision phase."""
@@ -125,7 +132,8 @@ async def execute_phase_polish(
 
 
 async def execute_phase_memory(
-    state: MainState, orchestrator: OrchestratorAgent,
+    state: MainState,
+    orchestrator: OrchestratorAgent,
     fm: ProjectFileManager,
 ) -> MainState:
     """Execute memory update phase."""
@@ -139,8 +147,10 @@ async def execute_phase_memory(
 # Phase 0: Commercial Research Pipeline
 # ================================================================
 
+
 async def execute_phase_platform_scan(
-    state: MainState, orchestrator: OrchestratorAgent,
+    state: MainState,
+    orchestrator: OrchestratorAgent,
     fm: ProjectFileManager,
 ) -> MainState:
     """Execute platform scanning phase (Phase 0a).
@@ -155,6 +165,7 @@ async def execute_phase_platform_scan(
         logger.warning("No scan data provided — skipping platform scan")
         # Still initialize topic research state so downstream phases don't crash
         from ..models.topic import TopicResearchState
+
         state.topic_research = TopicResearchState()
         return state
 
@@ -167,7 +178,8 @@ async def execute_phase_platform_scan(
 
 
 async def execute_phase_topic_selection(
-    state: MainState, orchestrator: OrchestratorAgent,
+    state: MainState,
+    orchestrator: OrchestratorAgent,
     fm: ProjectFileManager,
 ) -> MainState:
     """Execute topic selection phase (Phase 0b).
@@ -180,7 +192,8 @@ async def execute_phase_topic_selection(
 
 
 async def execute_phase_mini_arc(
-    state: MainState, orchestrator: OrchestratorAgent,
+    state: MainState,
+    orchestrator: OrchestratorAgent,
     fm: ProjectFileManager,
 ) -> MainState:
     """Execute mini-arc outline phase (Phase 0c).
@@ -239,7 +252,7 @@ def get_phase_data(state: MainState, phase: str) -> dict:
         # (websocket uses json.dumps with default=str, which would stringify models)
         serialized = {}
         for genre, outline in state.mini_arc_outline.items():
-            if hasattr(outline, 'model_dump'):
+            if hasattr(outline, "model_dump"):
                 serialized[genre] = outline.model_dump()
             elif isinstance(outline, dict):
                 serialized[genre] = outline
@@ -255,18 +268,15 @@ def get_phase_data(state: MainState, phase: str) -> dict:
         }
     elif phase == "character_creation" and state.characters:
         return {
-            "characters": {
-                cid: c.model_dump() for cid, c in state.characters.characters.items()
-            },
+            "characters": {cid: c.model_dump() for cid, c in state.characters.characters.items()},
         }
     elif phase == "master_outline" and state.outline:
         from ..models.outline import MasterOutline
+
         d = state.outline.model_dump()
         d["main_plot"] = [a.model_dump() for a in state.outline.main_plot]
         d["subplots"] = [a.model_dump() for a in state.outline.subplots]
         d["volumes"] = [v.model_dump() for v in state.outline.volumes]
-        d["major_turning_points"] = [
-            tp.model_dump() for tp in state.outline.major_turning_points
-        ]
+        d["major_turning_points"] = [tp.model_dump() for tp in state.outline.major_turning_points]
         return d
     return {}

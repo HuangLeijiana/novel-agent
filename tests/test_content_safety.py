@@ -28,8 +28,7 @@ class TestCleanContent:
 
     def test_normal_novel_text(self, checker):
         result = checker.check(
-            "李明站在山巅，俯瞰着脚下的世界。风从他的耳边呼啸而过，"
-            "带着远古的气息。他已经在这条路上走了太久。"
+            "李明站在山巅，俯瞰着脚下的世界。风从他的耳边呼啸而过，带着远古的气息。他已经在这条路上走了太久。"
         )
         assert result.passed
         assert len(result.flags) == 0

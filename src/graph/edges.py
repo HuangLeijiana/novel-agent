@@ -79,7 +79,7 @@ def human_confirmation_decision(
         logger.info("No human decision yet — defaulting to accept")
         return ROUTE_ACCEPT
 
-    decision_value = decision.value if hasattr(decision, 'value') else str(decision)
+    decision_value = decision.value if hasattr(decision, "value") else str(decision)
     logger.info(f"Human decision: {decision_value}")
 
     if decision_value == "accept":

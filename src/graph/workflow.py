@@ -98,8 +98,8 @@ def build_workflow() -> StateGraph:
         review_decision,
         {
             ROUTE_ACCEPT: "polish_revision",
-            ROUTE_REVISE: "chapter_writing",      # Rewrite with editor feedback
-            ROUTE_REWRITE: "chapter_planning",    # Replan then rewrite
+            ROUTE_REVISE: "chapter_writing",  # Rewrite with editor feedback
+            ROUTE_REWRITE: "chapter_planning",  # Replan then rewrite
         },
     )
 
@@ -122,10 +122,10 @@ def build_workflow() -> StateGraph:
         human_confirmation_decision,
         {
             ROUTE_ACCEPT: END,
-            ROUTE_REVISE: "polish_revision",          # Back to polish with feedback
-            ROUTE_REWRITE: "chapter_writing",          # Back to writing with feedback
-            ROUTE_ROLLBACK: "chapter_planning",        # Back to chapter planning
-            ROUTE_RESTART_BIBLE: "bible_construction", # Deep rollback
+            ROUTE_REVISE: "polish_revision",  # Back to polish with feedback
+            ROUTE_REWRITE: "chapter_writing",  # Back to writing with feedback
+            ROUTE_ROLLBACK: "chapter_planning",  # Back to chapter planning
+            ROUTE_RESTART_BIBLE: "bible_construction",  # Deep rollback
         },
     )
 
@@ -140,6 +140,7 @@ def build_workflow() -> StateGraph:
 # ============================================================
 # Convenience: build with async SQLite checkpointer
 # ============================================================
+
 
 async def build_async_workflow(db_path: Optional[str] = None):
     """Build workflow with async SQLite checkpointer for persistence.

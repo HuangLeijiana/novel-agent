@@ -26,11 +26,12 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SafetyFlag:
     """A single content safety flag with location info."""
-    category: str           # 'sexual', 'violence', 'political', 'platform'
-    severity: str           # 'warning', 'block'
-    keyword: str            # The triggering term
-    context: str            # Surrounding text (50 chars around the match)
-    position: int           # Character position in text
+
+    category: str  # 'sexual', 'violence', 'political', 'platform'
+    severity: str  # 'warning', 'block'
+    keyword: str  # The triggering term
+    context: str  # Surrounding text (50 chars around the match)
+    position: int  # Character position in text
 
     def to_dict(self) -> dict:
         return {
@@ -45,6 +46,7 @@ class SafetyFlag:
 @dataclass
 class SafetyResult:
     """Result of content safety check."""
+
     passed: bool = True
     flags: list[SafetyFlag] = field(default_factory=list)
     warning_count: int = 0
@@ -94,17 +96,30 @@ class ContentSafetyChecker:
     BLOCK_KEYWORDS: dict[str, list[str]] = {
         "sexual": [
             # Explicit sexual acts (Chinese)
-            "做爱", "性交", "口交", "肛交", "强奸", "轮奸",
-            "乱伦", "淫乱", "性奴", "性虐待",
+            "做爱",
+            "性交",
+            "口交",
+            "肛交",
+            "强奸",
+            "轮奸",
+            "乱伦",
+            "淫乱",
+            "性奴",
+            "性虐待",
             # Explicit sexual acts (English/romanized)
         ],
         "violence": [
             # Extreme gore / torture
-            "肢解", "剥皮", "活体解剖", "凌迟",
+            "肢解",
+            "剥皮",
+            "活体解剖",
+            "凌迟",
         ],
         "political": [
             # Politically sensitive — platform ban risk
-            "法轮功", "六四", "天安门事件",
+            "法轮功",
+            "六四",
+            "天安门事件",
         ],
     }
 
@@ -112,19 +127,32 @@ class ContentSafetyChecker:
     WARNING_KEYWORDS: dict[str, list[str]] = {
         "sexual": [
             # Suggestive but not explicit
-            "酥胸", "玉体", "胴体", "香艳", "春宵",
-            "翻云覆雨", "巫山云雨", "鱼水之欢",
+            "酥胸",
+            "玉体",
+            "胴体",
+            "香艳",
+            "春宵",
+            "翻云覆雨",
+            "巫山云雨",
+            "鱼水之欢",
             # Platform-specific borderline terms
-            "双修", "采补", "炉鼎",
+            "双修",
+            "采补",
+            "炉鼎",
         ],
         "violence": [
             # Graphic violence descriptors
-            "血肉模糊", "脑浆迸裂", "开膛破肚",
-            "尸横遍野", "血流成河",
+            "血肉模糊",
+            "脑浆迸裂",
+            "开膛破肚",
+            "尸横遍野",
+            "血流成河",
         ],
         "platform": [
             # Terms that trigger platform auto-review
-            "色情", "黄色小说", "成人内容",
+            "色情",
+            "黄色小说",
+            "成人内容",
         ],
     }
 
@@ -176,15 +204,11 @@ class ContentSafetyChecker:
         result.passed = result.block_count == 0
 
         if result.flags:
-            logger.warning(
-                f"Chapter {chapter_number}: {result.summary}"
-            )
+            logger.warning(f"Chapter {chapter_number}: {result.summary}")
 
         return result
 
-    def check_with_correction(
-        self, text: str, chapter_number: int = 0
-    ) -> tuple[SafetyResult, Optional[str]]:
+    def check_with_correction(self, text: str, chapter_number: int = 0) -> tuple[SafetyResult, Optional[str]]:
         """Check content and optionally suggest corrected text.
 
         For warning-level flags, replaces flagged terms with [内容已编辑]

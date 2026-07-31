@@ -46,13 +46,16 @@ def _slugify_title(title: str, max_len: int = 30) -> str:
 # Request/Response Schemas
 # ============================================================
 
+
 class CreateProjectRequest(BaseModel):
     """Request to create a new project."""
+
     config: ProjectConfig
 
 
 class ProjectResponse(BaseModel):
     """Project summary in list/detail views."""
+
     project_id: str
     title: Optional[str] = None
     status: str
@@ -63,12 +66,14 @@ class ProjectResponse(BaseModel):
 
 class SuggestTitlesRequest(BaseModel):
     """Request to generate title suggestions."""
+
     inspiration: str = Field(..., min_length=1, max_length=2000)
     genre: list[str] = Field(default_factory=list)
 
 
 class TitleSuggestionsResponse(BaseModel):
     """AI-generated title suggestions."""
+
     titles: list[str] = Field(..., min_length=1)
 
 
@@ -78,6 +83,7 @@ class HumanDecisionRequest(BaseModel):
     The feedback fields implement the evaluation report's required
     explicit feedback entry: thumbs up/down + reason tags.
     """
+
     decision: str = Field(..., description="accept / revise / rewrite / rollback")
     feedback: Optional[str] = Field(default=None, description="Human feedback text (free-form)")
     rollback_target: Optional[str] = Field(default=None, description="For rollback: 'chapter_plan' or 'bible'")
@@ -96,6 +102,7 @@ class HumanDecisionRequest(BaseModel):
 # Title Suggestions
 # ============================================================
 
+
 @router.post("/projects/suggest-titles", response_model=TitleSuggestionsResponse)
 async def suggest_titles(req: SuggestTitlesRequest):
     """Generate novel title suggestions based on inspiration and genre."""
@@ -109,13 +116,9 @@ async def suggest_titles(req: SuggestTitlesRequest):
         "- 符合题材风格（如玄幻、修仙、都市等）\n"
         "- 有吸引力，能让读者产生点击欲望\n"
         "- 优先使用中文书名\n"
-        "- 必须返回以下JSON格式：{\"titles\": [\"书名1\", \"书名2\", \"书名3\"]}"
+        '- 必须返回以下JSON格式：{"titles": ["书名1", "书名2", "书名3"]}'
     )
-    user_prompt = (
-        f"故事灵感：{req.inspiration}\n"
-        f"题材：{genre_text}\n\n"
-        f"请为这部小说生成3-5个备选书名。"
-    )
+    user_prompt = f"故事灵感：{req.inspiration}\n题材：{genre_text}\n\n请为这部小说生成3-5个备选书名。"
 
     class _TitleList(BaseModel):
         titles: list[str]
@@ -139,6 +142,7 @@ async def suggest_titles(req: SuggestTitlesRequest):
 # Project CRUD
 # ============================================================
 
+
 @router.post("/projects", response_model=ProjectResponse)
 async def create_project(req: CreateProjectRequest):
     """Create a new novel project and initialize its workspace."""
@@ -155,6 +159,7 @@ async def create_project(req: CreateProjectRequest):
 
     # Also persist project metadata with the title
     from ..models.project import ProjectMeta
+
     meta = ProjectMeta(project_id=project_id, title=req.config.title)
     fm.save_project_meta(meta)
 
@@ -182,14 +187,16 @@ async def list_projects():
             fm = get_file_manager(proj_dir.name)
             meta = fm.load_project_meta()
             config = fm.load_project_config()
-            projects.append({
-                "project_id": proj_dir.name,
-                "title": meta.title if meta else config.inspiration[:50] if config else proj_dir.name,
-                "status": meta.status if meta else "initialized",
-                "current_phase": meta.current_phase if meta else "idle",
-                "current_chapter": meta.current_chapter if meta else 0,
-                "total_chapters": meta.total_chapters if meta else 0,
-            })
+            projects.append(
+                {
+                    "project_id": proj_dir.name,
+                    "title": meta.title if meta else config.inspiration[:50] if config else proj_dir.name,
+                    "status": meta.status if meta else "initialized",
+                    "current_phase": meta.current_phase if meta else "idle",
+                    "current_chapter": meta.current_chapter if meta else 0,
+                    "total_chapters": meta.total_chapters if meta else 0,
+                }
+            )
     return projects
 
 
@@ -212,6 +219,7 @@ async def get_project(project_id: str):
 async def delete_project(project_id: str):
     """Delete a project and all its artifacts."""
     import shutil
+
     fm = get_file_manager(project_id)
     if not fm.exists():
         raise HTTPException(status_code=404, detail="Project not found")
@@ -235,6 +243,7 @@ async def update_project_title(project_id: str, req: UpdateTitleRequest):
         config.title = req.title
         fm.save_project_config(config)
     from ..models.project import ProjectMeta
+
     fm.save_project_meta(ProjectMeta(project_id=project_id, title=req.title))
     return {"status": "ok", "title": req.title}
 
@@ -261,6 +270,7 @@ CHAPTER_PHASES = [
 
 class NextPhaseRequest(BaseModel):
     """Request to confirm current phase and proceed."""
+
     phase: str = Field(..., description="Phase being confirmed")
     inspiration: Optional[str] = Field(default=None, description="User inspiration for next phase")
     edits: Optional[dict] = Field(default=None, description="User edits to current phase output")
@@ -268,6 +278,7 @@ class NextPhaseRequest(BaseModel):
 
 class PhaseConfirmationRequest(BaseModel):
     """Request to confirm phase and provide input."""
+
     inspiration: Optional[str] = Field(default=None)
 
 
@@ -280,6 +291,7 @@ async def start_workflow(project_id: str):
         raise HTTPException(status_code=404, detail="Project not found")
 
     from ..models.project import ProjectMeta
+
     meta = fm.load_project_meta() or ProjectMeta(project_id=project_id)
 
     initial_state = MainState(project_meta=meta, project_config=config)
@@ -312,7 +324,9 @@ async def start_workflow(project_id: str):
             else:
                 break
         initial_state.current_chapter_number = ch
-        logger.info(f"Loaded outline, {ch} chapters fully complete, next chapter has phase {_get_chapter_phase(fm, ch+1)}")
+        logger.info(
+            f"Loaded outline, {ch} chapters fully complete, next chapter has phase {_get_chapter_phase(fm, ch + 1)}"
+        )
 
     _active_projects[project_id] = {
         "state": initial_state,
@@ -332,6 +346,7 @@ class AiTitlesRequest(BaseModel):
 
 class GenerateSynopsisRequest(BaseModel):
     """Request to generate title + synopsis for a candidate topic."""
+
     genre_name: str = Field(..., min_length=1)
     inspiration: str = Field(default="", description="User inspiration or additional context")
 
@@ -370,7 +385,7 @@ async def generate_synopsis_for_candidate(project_id: str, req: GenerateSynopsis
     user_prompt = f"""请为以下题材生成一个吸睛的书名和简介。
 
 题材：{req.genre_name}
-灵感：{req.inspiration or '无'}
+灵感：{req.inspiration or "无"}
 
 请直接输出书名和简介。"""
 
@@ -380,27 +395,28 @@ async def generate_synopsis_for_candidate(project_id: str, req: GenerateSynopsis
             user_prompt=user_prompt,
             temperature_override=0.8,
         )
-        content = result.content if hasattr(result, 'content') else str(result)
+        content = result.content if hasattr(result, "content") else str(result)
 
         # Parse title and synopsis from text
         import re
-        title_match = re.search(r'书名[：:]\s*(.+?)(?:\n|$)', content)
-        synopsis_match = re.search(r'简介[：:]\s*(.+?)(?:\n|$)', content, re.DOTALL)
+
+        title_match = re.search(r"书名[：:]\s*(.+?)(?:\n|$)", content)
+        synopsis_match = re.search(r"简介[：:]\s*(.+?)(?:\n|$)", content, re.DOTALL)
 
         title = title_match.group(1).strip() if title_match else req.genre_name
         synopsis = synopsis_match.group(1).strip() if synopsis_match else ""
 
         # Fallback: if no label found, use first line as title, rest as synopsis
         if not title_match and not synopsis_match:
-            lines = [l.strip() for l in content.split('\n') if l.strip()]
+            lines = [l.strip() for l in content.split("\n") if l.strip()]
             if len(lines) >= 2:
                 title = lines[0]
-                synopsis = ' '.join(lines[1:])
+                synopsis = " ".join(lines[1:])
             elif lines:
                 title = lines[0]
 
         # Clean up common artifacts
-        title = re.sub(r'^[《「]|[》」]$', '', title).strip()[:50]
+        title = re.sub(r"^[《「]|[》」]$", "", title).strip()[:50]
         synopsis = synopsis.strip()[:300]
 
         return {
@@ -428,7 +444,7 @@ async def ai_generate_titles(project_id: str, req: AiTitlesRequest):
     scan_context = ""
     if proj and proj.get("state"):
         state = proj["state"]
-        if hasattr(state, 'topic_research') and state.topic_research:
+        if hasattr(state, "topic_research") and state.topic_research:
             tr = state.topic_research
             if tr.feilu_scan and not tr.feilu_scan.scan_failed:
                 titles = [e.title for e in (tr.feilu_scan.entries or [])[:10] if e.title]
@@ -441,6 +457,7 @@ async def ai_generate_titles(project_id: str, req: AiTitlesRequest):
 
     scheduler = get_scheduler()
     from ..agents.base import BaseAgent
+
     agent = BaseAgent.__new__(BaseAgent)
     agent.scheduler = scheduler
 
@@ -466,8 +483,8 @@ async def ai_generate_titles(project_id: str, req: AiTitlesRequest):
             temperature_override=0.8,
         )
         # Parse titles from result (split by newlines, filter empty)
-        titles = [line.strip() for line in result.content.split('\n') if line.strip()]
-        titles = [t for t in titles if len(t) >= 4 and not t.startswith('#')][:5]
+        titles = [line.strip() for line in result.content.split("\n") if line.strip()]
+        titles = [t for t in titles if len(t) >= 4 and not t.startswith("#")][:5]
         return {"titles": titles}
     except Exception as e:
         logger.error(f"AI title generation failed: {e}")
@@ -478,8 +495,10 @@ async def ai_generate_titles(project_id: str, req: AiTitlesRequest):
 # Topic Research — Scan Data Submission (Phase 0)
 # ============================================================
 
+
 class SubmitScanRequest(BaseModel):
     """Submit platform HTML content for scanning."""
+
     feilu_html: Optional[str] = Field(default=None, description="飞卢榜单页面HTML/文本")
     fanqie_html: Optional[str] = Field(default=None, description="番茄榜单页面HTML/文本")
 
@@ -566,8 +585,10 @@ async def auto_scan(project_id: str):
             "chars": len(fanqie_html) if fanqie_html else 0,
         },
         "message": (
-            "扫榜完成" if (feilu_ok and fanqie_ok)
-            else "部分平台扫榜成功" if (feilu_ok or fanqie_ok)
+            "扫榜完成"
+            if (feilu_ok and fanqie_ok)
+            else "部分平台扫榜成功"
+            if (feilu_ok or fanqie_ok)
             else "自动扫榜失败，请手动粘贴榜单内容"
         ),
     }
@@ -603,7 +624,9 @@ async def retry_phase(project_id: str, phase: str, req: PhaseConfirmationRequest
     Only works when the workflow is blocked waiting for confirmation.
     """
     from .phase_executor import (
-        PHASE_EXECUTORS, PHASE_LABELS, get_phase_data,
+        PHASE_EXECUTORS,
+        PHASE_LABELS,
+        get_phase_data,
     )
 
     proj = _active_projects.get(project_id)
@@ -625,6 +648,7 @@ async def retry_phase(project_id: str, phase: str, req: PhaseConfirmationRequest
     fm = proj["file_manager"]
     scheduler = get_scheduler()
     from ..agents.orchestrator import OrchestratorAgent
+
     orchestrator = OrchestratorAgent(scheduler)
 
     label = PHASE_LABELS.get(phase, phase)
@@ -647,10 +671,16 @@ async def retry_phase(project_id: str, phase: str, req: PhaseConfirmationRequest
 async def _run_phased_workflow(project_id: str):
     """Execute workflow phases sequentially with human confirmation between each."""
     from .phase_executor import (
-        PHASE_EXECUTORS, PHASE_TAB_MAP, PHASE_LABELS,
-        get_phase_data, execute_phase_bible, execute_phase_characters,
-        execute_phase_outline, execute_phase_platform_scan,
-        execute_phase_topic_selection, execute_phase_mini_arc,
+        PHASE_EXECUTORS,
+        PHASE_TAB_MAP,
+        PHASE_LABELS,
+        get_phase_data,
+        execute_phase_bible,
+        execute_phase_characters,
+        execute_phase_outline,
+        execute_phase_platform_scan,
+        execute_phase_topic_selection,
+        execute_phase_mini_arc,
     )
 
     proj = _active_projects.get(project_id)
@@ -661,6 +691,7 @@ async def _run_phased_workflow(project_id: str):
     fm = proj["file_manager"]
     scheduler = get_scheduler()
     from ..agents.orchestrator import OrchestratorAgent
+
     orchestrator = OrchestratorAgent(scheduler)
 
     try:
@@ -669,12 +700,14 @@ async def _run_phased_workflow(project_id: str):
         # ================================================================
         from .phase_executor import _pending_scan_data
 
-        has_scan_data = bool(
-            _pending_scan_data.get("feilu") or _pending_scan_data.get("fanqie")
-        )
+        has_scan_data = bool(_pending_scan_data.get("feilu") or _pending_scan_data.get("fanqie"))
         if has_scan_data:
             await _run_single_phase(
-                project_id, state, orchestrator, fm, "platform_scan",
+                project_id,
+                state,
+                orchestrator,
+                fm,
+                "platform_scan",
                 execute_phase_platform_scan,
             )
             if not await _wait_for_confirmation(project_id, "platform_scan"):
@@ -682,7 +715,11 @@ async def _run_phased_workflow(project_id: str):
 
             # Phase 0b: Topic Selection
             await _run_single_phase(
-                project_id, state, orchestrator, fm, "topic_selection",
+                project_id,
+                state,
+                orchestrator,
+                fm,
+                "topic_selection",
                 execute_phase_topic_selection,
             )
             if not await _wait_for_confirmation(project_id, "topic_selection"):
@@ -691,7 +728,11 @@ async def _run_phased_workflow(project_id: str):
 
             # Phase 0c: Mini-Arc Outline
             await _run_single_phase(
-                project_id, state, orchestrator, fm, "mini_arc_outline",
+                project_id,
+                state,
+                orchestrator,
+                fm,
+                "mini_arc_outline",
                 execute_phase_mini_arc,
             )
             if not await _wait_for_confirmation(project_id, "mini_arc_outline"):
@@ -703,7 +744,11 @@ async def _run_phased_workflow(project_id: str):
         # === Phase 1: Bible Construction (世界观) ===
         if not state.bible:
             await _run_single_phase(
-                project_id, state, orchestrator, fm, "bible_construction",
+                project_id,
+                state,
+                orchestrator,
+                fm,
+                "bible_construction",
                 execute_phase_bible,
             )
             if not await _wait_for_confirmation(project_id, "bible_construction"):
@@ -711,13 +756,18 @@ async def _run_phased_workflow(project_id: str):
             state = _apply_inspiration(project_id, state)
         else:
             await ws_manager.broadcast_phase_update(project_id, "bible_construction", 1.0, "世界观已存在，跳过")
-            await ws_manager.broadcast_phase_complete(project_id, "bible_construction",
-                get_phase_data(state, "bible_construction"))
+            await ws_manager.broadcast_phase_complete(
+                project_id, "bible_construction", get_phase_data(state, "bible_construction")
+            )
 
         # === Phase 2: Character Creation (角色) ===
         if not state.characters:
             await _run_single_phase(
-                project_id, state, orchestrator, fm, "character_creation",
+                project_id,
+                state,
+                orchestrator,
+                fm,
+                "character_creation",
                 execute_phase_characters,
             )
             if not await _wait_for_confirmation(project_id, "character_creation"):
@@ -725,13 +775,18 @@ async def _run_phased_workflow(project_id: str):
             state = _apply_inspiration(project_id, state)
         else:
             await ws_manager.broadcast_phase_update(project_id, "character_creation", 1.0, "角色已存在，跳过")
-            await ws_manager.broadcast_phase_complete(project_id, "character_creation",
-                get_phase_data(state, "character_creation"))
+            await ws_manager.broadcast_phase_complete(
+                project_id, "character_creation", get_phase_data(state, "character_creation")
+            )
 
         # === Phase 3: Master Outline (大纲) ===
         if not state.outline:
             await _run_single_phase(
-                project_id, state, orchestrator, fm, "master_outline",
+                project_id,
+                state,
+                orchestrator,
+                fm,
+                "master_outline",
                 execute_phase_outline,
             )
             if not await _wait_for_confirmation(project_id, "master_outline"):
@@ -739,14 +794,19 @@ async def _run_phased_workflow(project_id: str):
             state = _apply_inspiration(project_id, state)
         else:
             await ws_manager.broadcast_phase_update(project_id, "master_outline", 1.0, "大纲已存在，跳过")
-            await ws_manager.broadcast_phase_complete(project_id, "master_outline",
-                get_phase_data(state, "master_outline"))
+            await ws_manager.broadcast_phase_complete(
+                project_id, "master_outline", get_phase_data(state, "master_outline")
+            )
 
         # === Phase 4: Chapter Loop ===
         from .phase_executor import (
-            execute_phase_chapter_planning, execute_phase_chapter_writing,
-            execute_phase_review, execute_phase_polish, execute_phase_memory,
+            execute_phase_chapter_planning,
+            execute_phase_chapter_writing,
+            execute_phase_review,
+            execute_phase_polish,
+            execute_phase_memory,
         )
+
         total = max(state.outline.chapter_count if state.outline else 0, state.total_chapters, 3)
         # Calculate per-chapter progress increment
         chapter_progress_increment = 85.0 / max(total, 1)  # 5%→90% range
@@ -758,14 +818,17 @@ async def _run_phased_workflow(project_id: str):
             # Track per-chapter phase: 0=not started, 1=planned, 2=written, 3=reviewed, 4=polished, 5=done
             ch_phase = _get_chapter_phase(fm, ch)
             await ws_manager.broadcast_phase_update(
-                project_id, "chapter_loop", base_progress / 100,
-                f"第{ch}章（共{total}章）· 阶段{ch_phase}/5"
+                project_id, "chapter_loop", base_progress / 100, f"第{ch}章（共{total}章）· 阶段{ch_phase}/5"
             )
 
             # Plan chapter (phase 0→1)
             if ch_phase < 1:
                 await _run_single_phase(
-                    project_id, state, orchestrator, fm, "chapter_planning",
+                    project_id,
+                    state,
+                    orchestrator,
+                    fm,
+                    "chapter_planning",
                     execute_phase_chapter_planning,
                 )
                 if state.chapter_plan:
@@ -775,10 +838,10 @@ async def _run_phased_workflow(project_id: str):
             # Write chapter (phase 1→2)
             if _get_chapter_phase(fm, ch) < 2:
                 proj = _active_projects.get(project_id)
-                if proj: proj["current_phase"] = "chapter_writing"
+                if proj:
+                    proj["current_phase"] = "chapter_writing"
                 await ws_manager.broadcast_phase_update(
-                    project_id, "chapter_writing", (base_progress + 4) / 100,
-                    f"正在写作第{ch}章..."
+                    project_id, "chapter_writing", (base_progress + 4) / 100, f"正在写作第{ch}章..."
                 )
                 state = await orchestrator.write_chapter(state)
                 if state.chapter_draft:
@@ -790,17 +853,20 @@ async def _run_phased_workflow(project_id: str):
                 state = await orchestrator.review_chapter(state)
                 if state.review_report:
                     fm.save_review_report(state.review_report)
-                    await ws_manager.broadcast(project_id, {
-                        "type": "chapter_complete", "chapter": ch,
-                        "scores": state.review_report.dimension_scores,
-                    })
+                    await ws_manager.broadcast(
+                        project_id,
+                        {
+                            "type": "chapter_complete",
+                            "chapter": ch,
+                            "scores": state.review_report.dimension_scores,
+                        },
+                    )
                 _set_chapter_phase(fm, ch, 3)
 
             # Polish (phase 3→4)
             if _get_chapter_phase(fm, ch) < 4:
                 await ws_manager.broadcast_phase_update(
-                    project_id, "polish_revision", (base_progress + 8) / 100,
-                    f"润色第{ch}章..."
+                    project_id, "polish_revision", (base_progress + 8) / 100, f"润色第{ch}章..."
                 )
                 state = await orchestrator.polish_chapter(state)
                 if state.polished_chapter:
@@ -816,14 +882,16 @@ async def _run_phased_workflow(project_id: str):
 
             state.current_chapter_number = ch
             await ws_manager.broadcast_phase_update(
-                project_id, "chapter_loop", (base_progress + 16) / 100,
-                f"第{ch}章完成 ✓"
+                project_id, "chapter_loop", (base_progress + 16) / 100, f"第{ch}章完成 ✓"
             )
 
-        await ws_manager.broadcast(project_id, {
-            "type": "workflow_complete",
-            "message": f"全部{total}章已完成！",
-        })
+        await ws_manager.broadcast(
+            project_id,
+            {
+                "type": "workflow_complete",
+                "message": f"全部{total}章已完成！",
+            },
+        )
 
     except Exception as e:
         logger.error(f"Workflow error for {project_id}: {e}", exc_info=True)
@@ -831,8 +899,12 @@ async def _run_phased_workflow(project_id: str):
 
 
 async def _run_single_phase(
-    project_id: str, state: MainState, orchestrator,
-    fm, phase: str, executor_fn,
+    project_id: str,
+    state: MainState,
+    orchestrator,
+    fm,
+    phase: str,
+    executor_fn,
 ) -> None:
     """Execute one phase and broadcast progress with heartbeat updates."""
     from .phase_executor import PHASE_LABELS, get_phase_data
@@ -851,7 +923,9 @@ async def _run_single_phase(
         while not heartbeat_stop.is_set():
             dots = (dots + 1) % 4
             await ws_manager.broadcast_phase_update(
-                project_id, phase, 0.15 + (dots * 0.02),
+                project_id,
+                phase,
+                0.15 + (dots * 0.02),
                 f"正在{label}{'.' * dots}",
             )
             try:
@@ -903,6 +977,7 @@ async def _wait_for_confirmation(project_id: str, phase: str) -> bool:
 def _get_chapter_phase(fm, ch: int) -> int:
     """Get the completion phase of a chapter (0-5). Persisted to disk."""
     import os, json
+
     phase_file = os.path.join(fm.root, "output", "chapters", f"chapter_{ch:03d}_phase.json")
     try:
         if os.path.exists(phase_file):
@@ -913,9 +988,9 @@ def _get_chapter_phase(fm, ch: int) -> int:
     # Fallback: detect from existing files
     if fm.load_chapter_markdown(ch):
         return 4  # Has polished content
-    if fm.load_review_report(ch) if hasattr(fm, 'load_review_report') else False:
+    if fm.load_review_report(ch) if hasattr(fm, "load_review_report") else False:
         return 3
-    if fm.load_chapter_draft(ch) if hasattr(fm, 'load_chapter_draft') else False:
+    if fm.load_chapter_draft(ch) if hasattr(fm, "load_chapter_draft") else False:
         return 2
     if fm.load_chapter_plan(ch):
         return 1
@@ -925,6 +1000,7 @@ def _get_chapter_phase(fm, ch: int) -> int:
 def _set_chapter_phase(fm, ch: int, phase: int):
     """Save chapter completion phase to disk."""
     import os, json
+
     phase_dir = os.path.join(fm.root, "output", "chapters")
     os.makedirs(phase_dir, exist_ok=True)
     phase_file = os.path.join(phase_dir, f"chapter_{ch:03d}_phase.json")
@@ -950,6 +1026,7 @@ def _apply_inspiration(project_id: str, state: MainState) -> MainState:
 # ============================================================
 # Human Decision
 # ============================================================
+
 
 @router.post("/projects/{project_id}/human-decision")
 async def submit_human_decision(project_id: str, req: HumanDecisionRequest):
@@ -1014,6 +1091,7 @@ async def submit_human_decision(project_id: str, req: HumanDecisionRequest):
 # Artifact Access
 # ============================================================
 
+
 @router.get("/projects/{project_id}/bible")
 async def get_bible(project_id: str):
     """Get the complete novel bible."""
@@ -1052,11 +1130,13 @@ async def list_chapters(project_id: str):
     chapters = []
     for num in plans:
         plan = fm.load_chapter_plan(num)
-        chapters.append({
-            "chapter_number": num,
-            "title": plan.title if plan else "",
-            "status": plan.status if plan else "unknown",
-        })
+        chapters.append(
+            {
+                "chapter_number": num,
+                "title": plan.title if plan else "",
+                "status": plan.status if plan else "unknown",
+            }
+        )
     return chapters
 
 
@@ -1082,6 +1162,7 @@ async def get_chapter(project_id: str, chapter_number: int):
 async def download_chapter_md(project_id: str, chapter_number: int):
     """Download a chapter as Markdown."""
     from fastapi.responses import PlainTextResponse
+
     fm = get_file_manager(project_id)
     content = fm.load_chapter_markdown(chapter_number)
     if content is None:
@@ -1103,6 +1184,7 @@ async def get_memory(project_id: str):
 async def export_book_md(project_id: str):
     """Export the complete book as a single Markdown file."""
     from fastapi.responses import FileResponse
+
     fm = get_file_manager(project_id)
     path = fm.export_book_markdown()
     return FileResponse(path, media_type="text/markdown; charset=utf-8")
@@ -1112,6 +1194,7 @@ async def export_book_md(project_id: str):
 async def export_book_docx(project_id: str):
     """Export the complete book as a single DOCX file."""
     from fastapi.responses import FileResponse
+
     fm = get_file_manager(project_id)
     path = fm.export_book_docx()
     return FileResponse(
@@ -1124,8 +1207,10 @@ async def export_book_docx(project_id: str):
 # Conversational Editor — file upload, analysis, polish, rewrite
 # ============================================================
 
+
 class EditorChatRequest(BaseModel):
     """Request for the conversational editor."""
+
     message: str = Field(..., description="User message or instruction")
     mode: str = Field(default="chat", description="Mode: chat, analyze, polish, rewrite")
     context: Optional[str] = Field(default=None, description="Current text content for context")
@@ -1203,16 +1288,14 @@ async def editor_list_files(project_id: str):
     """List uploaded files for the editor."""
     proj = _active_projects.get(project_id, {})
     files = proj.get("uploaded_files", {})
-    return {
-        fid: {"filename": f["filename"], "size": f["size"]}
-        for fid, f in files.items()
-    }
+    return {fid: {"filename": f["filename"], "size": f["size"]} for fid, f in files.items()}
 
 
 @router.delete("/projects/{project_id}/chapters/{chapter_number}")
 async def delete_chapter(project_id: str, chapter_number: int):
     """Delete a chapter and all its artifacts."""
     import os, glob
+
     fm = get_file_manager(project_id)
     deleted = []
     for pattern in [
@@ -1229,8 +1312,10 @@ async def delete_chapter(project_id: str, chapter_number: int):
 # Inline Edit — save user edits to project artifacts
 # ============================================================
 
+
 class EditSectionRequest(BaseModel):
     """Request to edit a section of a project artifact."""
+
     section: str = Field(..., description="Section ID, e.g. 'bible-world', 'char-0', 'outline-vols'")
     value: str = Field(..., description="New text content for the section")
 
@@ -1247,6 +1332,7 @@ async def edit_section(project_id: str, req: EditSectionRequest):
             # Save chapter content edit
             ch_num = int(section.split("-")[1])
             from ..models.chapter import PolishedChapter
+
             existing = fm.load_chapter_markdown(ch_num)
             title = existing.title if existing else f"第{ch_num}章"
             updated = PolishedChapter(chapter_number=ch_num, title=title, content=value)
@@ -1296,11 +1382,13 @@ async def edit_section(project_id: str, req: EditSectionRequest):
 def _invalidate_downstream(fm, artifacts: list):
     """Delete downstream artifacts so they get regenerated from updated content."""
     import os, glob
+
     for art in artifacts:
         try:
             if art == "characters":
                 path = os.path.join(fm.root, "novel_bible", "characters.yaml")
-                if os.path.exists(path): os.remove(path)
+                if os.path.exists(path):
+                    os.remove(path)
             elif art == "outline":
                 for f in glob.glob(os.path.join(fm.root, "outline", "*.yaml")):
                     os.remove(f)
@@ -1316,6 +1404,7 @@ def _invalidate_downstream(fm, artifacts: list):
 def _apply_bible_edit(bible, section: str, value: str):
     """Apply edit to the bible model."""
     import json
+
     sub = section.replace("bible-", "")
     if sub == "world" and bible.world:
         try:
@@ -1328,6 +1417,7 @@ def _apply_bible_edit(bible, section: str, value: str):
     elif sub == "factions":
         try:
             from ..models.bible import Faction
+
             data = json.loads(value)
             bible.factions = [Faction.model_validate(f) for f in data]
         except Exception:
@@ -1335,6 +1425,7 @@ def _apply_bible_edit(bible, section: str, value: str):
     elif sub == "themes":
         try:
             from ..models.bible import Theme
+
             data = json.loads(value)
             bible.themes = [Theme.model_validate(t) for t in data]
         except Exception:
@@ -1342,6 +1433,7 @@ def _apply_bible_edit(bible, section: str, value: str):
     elif sub == "conflicts":
         try:
             from ..models.bible import CoreConflict
+
             data = json.loads(value)
             bible.core_conflicts = [CoreConflict.model_validate(c) for c in data]
         except Exception:
@@ -1351,8 +1443,10 @@ def _apply_bible_edit(bible, section: str, value: str):
 def _apply_character_edit(chars, idx: int, value: str):
     """Apply edit to a character profile."""
     import json
+
     try:
         from ..models.characters import CharacterProfile
+
         data = json.loads(value)
         char_list = list(chars.characters.values())
         if idx < len(char_list):
@@ -1365,18 +1459,22 @@ def _apply_character_edit(chars, idx: int, value: str):
 def _apply_outline_edit(outline, section: str, value: str):
     """Apply edit to the outline model."""
     import json
+
     sub = section.replace("outline-", "")
     try:
         if sub in ("info", "main", "subs", "vols", "tps"):
             data = json.loads(value)
             if sub == "main":
                 from ..models.outline import PlotArc
+
                 outline.main_plot = [PlotArc.model_validate(a) for a in data]
             elif sub == "subs":
                 from ..models.outline import PlotArc
+
                 outline.subplots = [PlotArc.model_validate(a) for a in data]
             elif sub == "vols":
                 from ..models.outline import Volume
+
                 outline.volumes = [Volume.model_validate(v) for v in data]
     except Exception:
         pass
@@ -1386,9 +1484,11 @@ def _apply_outline_edit(outline, section: str, value: str):
 # Feedback Persistence & Analytics (Data Flywheel Layer)
 # ============================================================
 
+
 def _save_feedback(fm, feedback_records: list) -> None:
     """Persist feedback records to disk as JSON."""
     import os
+
     feedback_path = os.path.join(fm.root, "feedback.json")
     try:
         records_data = [r.model_dump() for r in feedback_records]
@@ -1401,6 +1501,7 @@ def _save_feedback(fm, feedback_records: list) -> None:
 def _load_feedback(fm) -> list:
     """Load feedback records from disk."""
     import os
+
     feedback_path = os.path.join(fm.root, "feedback.json")
     if not os.path.exists(feedback_path):
         return []
@@ -1408,6 +1509,7 @@ def _load_feedback(fm) -> list:
         with open(feedback_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         from ..models.feedback import FeedbackEntry
+
         return [FeedbackEntry.model_validate(r) for r in data]
     except Exception as e:
         logger.error(f"Failed to load feedback: {e}")
@@ -1429,6 +1531,7 @@ async def get_feedback_history(project_id: str):
 
     # Build summary
     from ..models.feedback import FeedbackSummary
+
     total = len(records)
     positive = sum(1 for r in records if r.get("sentiment") == "thumbs_up")
     negative = total - positive
@@ -1512,18 +1615,17 @@ async def get_bad_cases(project_id: str):
             continue
         score = r.get("review_score", 0)
         if score < 6.5 or r.get("revision_count", 0) >= 2:
-            reason_labels = [
-                REASON_TAG_LABELS.get(FeedbackReasonTag(t), t)
-                for t in r.get("reason_tags", [])
-            ]
-            bad_cases.append({
-                "chapter": r.get("chapter_number"),
-                "score": score,
-                "revisions": r.get("revision_count", 0),
-                "reasons": reason_labels,
-                "notes": r.get("notes", ""),
-                "timestamp": r.get("timestamp", ""),
-            })
+            reason_labels = [REASON_TAG_LABELS.get(FeedbackReasonTag(t), t) for t in r.get("reason_tags", [])]
+            bad_cases.append(
+                {
+                    "chapter": r.get("chapter_number"),
+                    "score": score,
+                    "revisions": r.get("revision_count", 0),
+                    "reasons": reason_labels,
+                    "notes": r.get("notes", ""),
+                    "timestamp": r.get("timestamp", ""),
+                }
+            )
 
     # Sort by score ascending (worst first)
     bad_cases.sort(key=lambda c: c["score"])

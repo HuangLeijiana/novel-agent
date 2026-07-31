@@ -19,6 +19,7 @@ from src.llm.scheduler import _try_parse_json
 # JSON Repair (_try_parse_json)
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestJsonRepair:
     """Test the multi-layer JSON repair pipeline used by ModelScheduler."""
 
@@ -63,9 +64,7 @@ class TestJsonRepair:
         result = _try_parse_json(raw)
         assert result["title"] == "test"
 
-    @pytest.mark.xfail(
-        reason="Known limitation: deeply nested truncation with unclosed string in array"
-    )
+    @pytest.mark.xfail(reason="Known limitation: deeply nested truncation with unclosed string in array")
     def test_truncated_json_with_nested_brackets(self):
         raw = '{"items": [{"a": 1}, {"b": 2}'
         result = _try_parse_json(raw)
@@ -100,11 +99,11 @@ class TestJsonRepair:
     def test_qwen3_real_truncation_pattern(self):
         """Simulates Qwen3 truncation: content string cut off mid-word."""
         raw = (
-            '{\n'
+            "{\n"
             '  "title": "废脉少年",\n'
             '  "content": "## 第一节\\n\\n秦默站在矿区深处，手中的晶石散发着诡异的光芒。'
-            '他感受到一股前所未有的力量在体内涌动，仿佛有什么东西正在苏醒。\\n\\n突然，'
-            '一道古老的声音在他脑海中响起：'
+            "他感受到一股前所未有的力量在体内涌动，仿佛有什么东西正在苏醒。\\n\\n突然，"
+            "一道古老的声音在他脑海中响起："
         )
         result = _try_parse_json(raw)
         assert result["title"] == "废脉少年"
@@ -114,6 +113,7 @@ class TestJsonRepair:
 # ═══════════════════════════════════════════════════════════════════════
 # Pydantic Model Validators — ChapterContentOutput
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestChapterContentOutput:
     from src.agents.writer import ChapterContentOutput
@@ -156,9 +156,7 @@ class TestChapterContentOutput:
         assert not hasattr(result, "extra")
 
     def test_notes_alias(self):
-        result = self.ChapterContentOutput.model_validate(
-            {"title": "x", "content": "y", "notes": "z"}
-        )
+        result = self.ChapterContentOutput.model_validate({"title": "x", "content": "y", "notes": "z"})
         assert result.author_notes == "z"
 
 
@@ -166,52 +164,49 @@ class TestChapterContentOutput:
 # Pydantic Model Validators — FactExtractionOutput
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestFactExtractionOutput:
     from src.agents.writer import FactExtractionOutput
 
     def test_valid_empty(self):
-        result = self.FactExtractionOutput.model_validate(
-            {"new_facts": [], "state_changes": []}
-        )
+        result = self.FactExtractionOutput.model_validate({"new_facts": [], "state_changes": []})
         assert result.new_facts == []
         assert result.state_changes == []
 
     def test_string_facts_coerced(self):
         """Plain strings should be coerced to Fact dicts."""
-        result = self.FactExtractionOutput.model_validate(
-            {"new_facts": ["苍玄大陆以修真为尊"], "state_changes": []}
-        )
+        result = self.FactExtractionOutput.model_validate({"new_facts": ["苍玄大陆以修真为尊"], "state_changes": []})
         assert result.new_facts[0].description == "苍玄大陆以修真为尊"
 
     def test_string_state_changes_coerced(self):
         """Plain strings should be coerced to StateChange dicts."""
-        result = self.FactExtractionOutput.model_validate(
-            {"new_facts": [], "state_changes": ["秦默觉醒了远古血脉"]}
-        )
+        result = self.FactExtractionOutput.model_validate({"new_facts": [], "state_changes": ["秦默觉醒了远古血脉"]})
         assert result.state_changes[0].reason == "秦默觉醒了远古血脉"
 
     def test_chinese_keys_normalized(self):
-        result = self.FactExtractionOutput.model_validate({
-            "new_facts": [
-                {"描述": "测试事实", "类别": "world", "确定性": 0.8}
-            ],
-            "state_changes": [],
-        })
+        result = self.FactExtractionOutput.model_validate(
+            {
+                "new_facts": [{"描述": "测试事实", "类别": "world", "确定性": 0.8}],
+                "state_changes": [],
+            }
+        )
         assert result.new_facts[0].description == "测试事实"
         assert result.new_facts[0].category == "world"
         assert result.new_facts[0].certainty == 0.8
 
     def test_mixed_strings_and_dicts(self):
-        result = self.FactExtractionOutput.model_validate({
-            "new_facts": [
-                {"category": "plot", "description": "剧情"},
-                "另一个事实",
-            ],
-            "state_changes": [
-                {"character_id": "char_001", "reason": "正常"},
-                "角色变化",
-            ],
-        })
+        result = self.FactExtractionOutput.model_validate(
+            {
+                "new_facts": [
+                    {"category": "plot", "description": "剧情"},
+                    "另一个事实",
+                ],
+                "state_changes": [
+                    {"character_id": "char_001", "reason": "正常"},
+                    "角色变化",
+                ],
+            }
+        )
         assert len(result.new_facts) == 2
         assert result.new_facts[0].category == "plot"
         assert result.new_facts[1].description == "另一个事实"
@@ -220,6 +215,7 @@ class TestFactExtractionOutput:
 # ═══════════════════════════════════════════════════════════════════════
 # Content Safety
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestContentSafety:
     from src.utils.content_safety import ContentSafetyChecker
@@ -292,6 +288,7 @@ class TestContentSafety:
 # Prompt Building
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestPromptBuilding:
     def test_expansion_prompt_contains_targets(self):
         from src.agents.writer import _build_expansion_prompt
@@ -313,8 +310,11 @@ class TestPromptBuilding:
         from src.agents.writer import _build_expansion_prompt
 
         prompt = _build_expansion_prompt(
-            content="x", current_count=100, target_count=500,
-            chapter_num=1, chapter_title="title",
+            content="x",
+            current_count=100,
+            target_count=500,
+            chapter_num=1,
+            chapter_title="title",
         )
         assert "JSON" in prompt or "content" in prompt
 
@@ -325,9 +325,15 @@ class TestPromptBuilding:
 
         agent = WriterAgent(ModelScheduler())
         scenes = [
-            Scene(number=1, setting="矿区", pov="char_001",
-                  characters_present=["char_001"],
-                  goal="展示卑微", conflict="压迫", outcome="不甘"),
+            Scene(
+                number=1,
+                setting="矿区",
+                pov="char_001",
+                characters_present=["char_001"],
+                goal="展示卑微",
+                conflict="压迫",
+                outcome="不甘",
+            ),
         ]
         result = agent._format_scenes(scenes)
         assert "矿区" in result
@@ -351,9 +357,11 @@ class TestPromptBuilding:
 # Settings & Model Assignments
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestModelAssignments:
     def test_provider_presets_loaded(self):
         from src.config.settings import PROVIDER_PRESETS
+
         assert "modelscope" in PROVIDER_PRESETS
         assert "openai" in PROVIDER_PRESETS
         assert "anthropic" in PROVIDER_PRESETS
@@ -361,17 +369,20 @@ class TestModelAssignments:
 
     def test_quality_agents_have_writer(self):
         from src.config.model_assignments import QUALITY_AGENTS
+
         assert "writer" in QUALITY_AGENTS
         assert "character_manager" in QUALITY_AGENTS
         assert "architect" in QUALITY_AGENTS
 
     def test_budget_agents_have_editor(self):
         from src.config.model_assignments import BUDGET_AGENTS
+
         assert "editor" in BUDGET_AGENTS
         assert "continuity_checker" in BUDGET_AGENTS
 
     def test_agent_configs_complete(self):
         from src.config.model_assignments import AGENT_CONFIGS, QUALITY_AGENTS, BUDGET_AGENTS, ORCHESTRATOR_AGENTS
+
         all_agents = QUALITY_AGENTS | BUDGET_AGENTS | ORCHESTRATOR_AGENTS
         for agent in all_agents:
             assert agent in AGENT_CONFIGS, f"Missing config for {agent}"
@@ -380,12 +391,14 @@ class TestModelAssignments:
 
     def test_writer_max_tokens(self):
         from src.config.model_assignments import AGENT_CONFIGS
+
         assert AGENT_CONFIGS["writer"]["max_tokens"] >= 16384
 
     def test_all_agents_in_override_map(self):
         from src.config.model_assignments import QUALITY_AGENTS, BUDGET_AGENTS, ORCHESTRATOR_AGENTS
         import inspect
         from src.config.model_assignments import _resolve_provider_model
+
         # Verify the function has entries for all agent types
         all_agents = sorted(QUALITY_AGENTS | BUDGET_AGENTS | ORCHESTRATOR_AGENTS)
         src = inspect.getsource(_resolve_provider_model)
@@ -397,21 +410,21 @@ class TestModelAssignments:
 # Data Models — Robustness
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestMasterOutlineValidation:
     from src.models.outline import MasterOutline
 
     def test_string_volumes_coerced(self):
         """Qwen3 returns volumes as strings — should be coerced."""
         from src.models.outline import Volume, PlotArc, TurningPoint
+
         outline = self.MasterOutline(
             title="测试",
             logline="测试",
             main_plot=[PlotArc(name="主线", description="主线", arc_type="main")],
             subplots=[],
             volumes=[Volume(title="卷一", number=1, start_chapter=1, end_chapter=10)],
-            major_turning_points=[
-                TurningPoint(turning_type="inciting_incident", chapter=1, description="事件")
-            ],
+            major_turning_points=[TurningPoint(turning_type="inciting_incident", chapter=1, description="事件")],
             chapter_count=30,
         )
         assert outline.title == "测试"
@@ -419,14 +432,13 @@ class TestMasterOutlineValidation:
 
     def test_minimal_outline_valid(self):
         from src.models.outline import Volume, PlotArc, TurningPoint
+
         outline = self.MasterOutline(
             title="测试",
             logline="测试",
             main_plot=[PlotArc(name="主线", description="d", arc_type="main")],
             volumes=[Volume(title="v", number=1, start_chapter=1, end_chapter=5)],
-            major_turning_points=[
-                TurningPoint(turning_type="inciting_incident", chapter=1, description="事件")
-            ],
+            major_turning_points=[TurningPoint(turning_type="inciting_incident", chapter=1, description="事件")],
             chapter_count=10,
         )
         assert outline.chapter_count == 10
@@ -442,9 +454,7 @@ class TestFactModel:
         assert fact.category in ("world", "other")
 
     def test_dict_with_chinese_keys(self):
-        fact = self.Fact.model_validate(
-            {"描述": "测试事实", "类别": "character", "确定性": 0.9}
-        )
+        fact = self.Fact.model_validate({"描述": "测试事实", "类别": "character", "确定性": 0.9})
         assert fact.description == "测试事实"
         assert fact.category == "character"
         assert fact.certainty == 0.9
@@ -454,15 +464,14 @@ class TestFactModel:
 # Model Assignments — Parse Override
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestParseOverride:
     def test_provider_model_split(self):
         from src.config.model_assignments import _parse_override
         from src.config.settings import Settings
 
         settings = Settings()
-        provider, model, fallback = _parse_override(
-            "anthropic:claude-sonnet-4", settings
-        )
+        provider, model, fallback = _parse_override("anthropic:claude-sonnet-4", settings)
         assert provider == "anthropic"
         assert model == "claude-sonnet-4"
         assert fallback is None
@@ -480,3 +489,235 @@ class TestParseOverride:
         provider, model, fallback = _parse_override("Qwen/Qwen3-8B", settings)
         assert provider == "modelscope"
         assert model == "Qwen/Qwen3-8B"
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# File Manager — Path Handling
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class TestFileManager:
+    def test_root_path_construction(self):
+        from pathlib import Path
+        from src.storage.file_manager import ProjectFileManager
+
+        fm = ProjectFileManager("/tmp/workspace", "proj_001")
+        assert fm.root == Path("/tmp/workspace/projects/proj_001")
+        assert fm.workspace_root == Path("/tmp/workspace")
+        assert fm.project_id == "proj_001"
+
+    def test_path_with_windows_style(self):
+        from pathlib import Path
+        from src.storage.file_manager import ProjectFileManager
+
+        fm = ProjectFileManager("D:\\novels", "test-project")
+        assert fm.root == Path("D:/novels/projects/test-project")
+
+    def test_exists_returns_false_for_new_project(self):
+        import tempfile
+        from src.storage.file_manager import ProjectFileManager
+
+        with tempfile.TemporaryDirectory() as td:
+            fm = ProjectFileManager(td, "nonexistent")
+            assert not fm.exists()
+
+    def test_initialize_creates_directories(self):
+        import tempfile
+        from src.storage.file_manager import ProjectFileManager
+        from src.models.project import ProjectConfig
+
+        with tempfile.TemporaryDirectory() as td:
+            fm = ProjectFileManager(td, "init_test")
+            config = ProjectConfig(
+                title="测试",
+                inspiration="测试",
+                genre=["玄幻"],
+                target_readers="读者",
+                tone="热血",
+            )
+            fm.initialize(config)
+            assert fm.exists()
+            assert (fm.root / "novel_bible").is_dir()
+            assert (fm.root / "outline" / "chapters").is_dir()
+            assert (fm.root / "memory").is_dir()
+            assert (fm.root / "output" / "chapters").is_dir()
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Model Scheduler — Routing & Provider Init
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class TestSchedulerRouting:
+    def test_get_assignment_returns_known_agent(self):
+        from src.llm.scheduler import ModelScheduler
+
+        s = ModelScheduler()
+        assignment = s._get_assignment("writer")
+        assert assignment.agent_type == "writer"
+        assert assignment.max_tokens >= 16384
+
+    def test_get_assignment_falls_back_for_unknown(self):
+        from src.llm.scheduler import ModelScheduler
+
+        s = ModelScheduler()
+        assignment = s._get_assignment("nonexistent_agent")
+        assert assignment is not None
+        # Falls back to orchestrator or first available
+        assert assignment.agent_type in ("orchestrator", "writer", "architect")
+
+    def test_all_registered_agents_have_assignments(self):
+        from src.llm.scheduler import ModelScheduler
+        from src.config.model_assignments import AGENT_CONFIGS
+
+        s = ModelScheduler()
+        for agent_type in AGENT_CONFIGS:
+            assignment = s._get_assignment(agent_type)
+            assert assignment is not None, f"Missing assignment for {agent_type}"
+            assert assignment.max_tokens > 0
+            assert 0.0 <= assignment.temperature <= 2.0
+
+    def test_modelscope_uses_openai_provider(self):
+        from src.llm.scheduler import ModelScheduler
+
+        s = ModelScheduler()
+        provider = s._get_provider("modelscope")
+        assert provider.provider_name in ("openai", "modelscope")
+
+    def test_provider_lazy_initialization(self):
+        from src.llm.scheduler import ModelScheduler
+
+        s = ModelScheduler()
+        # Providers dict starts empty
+        assert len(s._providers) == 0
+        # First access initializes
+        p1 = s._get_provider("modelscope")
+        assert "modelscope" in s._providers
+        # Second access returns same instance
+        p2 = s._get_provider("modelscope")
+        assert p1 is p2
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Character & Bible Models
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class TestCharacterModels:
+    def test_minimal_character_profile(self):
+        from src.models.characters import CharacterProfile
+
+        char = CharacterProfile(
+            id="char_001",
+            name="秦默",
+            role="protagonist",
+            personality="坚韧",
+            motivation="变强",
+            flaw="固执",
+            backstory="被流放",
+        )
+        assert char.name == "秦默"
+        assert char.role == "protagonist"
+
+    def test_character_registry(self):
+        from src.models.characters import CharacterRegistry, CharacterProfile
+
+        reg = CharacterRegistry(
+            characters={
+                "c1": CharacterProfile(
+                    id="c1",
+                    name="主角",
+                    role="protagonist",
+                    personality="勇敢",
+                    motivation="复仇",
+                    flaw="傲慢",
+                    backstory="孤儿",
+                ),
+            }
+        )
+        assert "c1" in reg.characters
+        assert reg.characters["c1"].name == "主角"
+
+
+class TestBibleModels:
+    def test_world_building_minimal(self):
+        from src.models.bible import WorldBuilding
+
+        w = WorldBuilding(name="测试大陆", world_type="fantasy")
+        assert w.name == "测试大陆"
+        assert w.world_type == "fantasy"
+
+    def test_faction_creation(self):
+        from src.models.bible import Faction
+
+        f = Faction(name="青云宗", faction_type="sect", goal="维护正道")
+        assert f.name == "青云宗"
+        assert f.faction_type == "sect"
+
+    def test_novel_bible_minimal(self):
+        from src.models.bible import (
+            NovelBible,
+            WorldBuilding,
+            Faction,
+            NarrativeRules,
+            StyleContract,
+            Theme,
+            CoreConflict,
+        )
+
+        bible = NovelBible(
+            world=WorldBuilding(name="大陆", world_type="fantasy"),
+            factions=[Faction(name="宗门", faction_type="sect", goal="正道")],
+            rules=NarrativeRules(),
+            style_contract=StyleContract(tone="热血"),
+            themes=[Theme(name="成长")],
+            core_conflicts=[CoreConflict(conflict_type="person_vs_society", description="抗争")],
+        )
+        assert len(bible.factions) == 1
+        assert bible.style_contract.tone == "热血"
+        assert len(bible.themes) == 1
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Settings — Provider Detection
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class TestSettingsProviderDetection:
+    def test_detect_modelscope_from_base_url(self):
+        from src.config.settings import Settings
+
+        s = Settings(
+            openai_base_url="https://api-inference.modelscope.cn/v1",
+            _env_file=None,
+        )
+        # No API keys → falls through to base_url detection
+        assert s.active_provider == "modelscope"
+
+    def test_detect_dashscope_from_base_url(self):
+        from src.config.settings import Settings
+
+        s = Settings(
+            openai_base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            _env_file=None,
+        )
+        # No API keys → falls through to base_url detection
+        assert s.active_provider == "dashscope"
+
+    def test_default_active_provider(self):
+        from src.config.settings import Settings
+
+        s = Settings(
+            default_provider="openai",
+            openai_api_key="test",
+            _env_file=None,
+        )
+        assert s.active_provider == "openai"
+
+    def test_has_anthropic_detection(self):
+        from src.config.settings import Settings
+
+        s = Settings(_env_file=None)
+        assert not s.has_anthropic
+        s2 = Settings(anthropic_api_key="sk-ant-test", _env_file=None)
+        assert s2.has_anthropic

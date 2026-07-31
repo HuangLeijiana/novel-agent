@@ -12,6 +12,7 @@ from pydantic import BaseModel
 # YAML
 # ============================================================
 
+
 class YamlSerializer:
     """Handles YAML serialization with sensible defaults."""
 
@@ -64,6 +65,7 @@ class YamlSerializer:
 # ============================================================
 # Markdown
 # ============================================================
+
 
 class MarkdownSerializer:
     """Handles Markdown file generation for chapters."""
@@ -123,6 +125,7 @@ class MarkdownSerializer:
 # ============================================================
 # DOCX (Word Document)
 # ============================================================
+
 
 class DocxSerializer:
     """Handles Word document generation for chapters using python-docx."""

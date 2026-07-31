@@ -29,8 +29,10 @@ logger = logging.getLogger(__name__)
 # Structured output schemas
 # ============================================================
 
+
 class MasterOutlineOutput(BaseModel):
     """LLM output for master outline."""
+
     title: str = Field(default="", description="小说标题")
     subtitle: Optional[str] = Field(default=None, description="副标题")
     logline: str = Field(default="", description="一句话简介")
@@ -62,10 +64,7 @@ class MasterOutlineOutput(BaseModel):
         # Also coerce string plot arcs
         for field in ("main_plot", "subplots"):
             if field in d and isinstance(d[field], list):
-                d[field] = [
-                    {"description": x} if isinstance(x, str) else x
-                    for x in d[field]
-                ]
+                d[field] = [{"description": x} if isinstance(x, str) else x for x in d[field]]
         # Coerce string volumes (Qwen3 may output "第X卷：标题...描述")
         if "volumes" in d and isinstance(d["volumes"], list):
             coerced_vols = []
@@ -73,6 +72,7 @@ class MasterOutlineOutput(BaseModel):
                 if isinstance(v, str):
                     # Parse "第X卷：标题" or "第X卷 标题" or just "标题"
                     import re as _re
+
                     vol_num = i + 1
                     vol_title = v
                     # Try to extract volume number from string
@@ -87,12 +87,14 @@ class MasterOutlineOutput(BaseModel):
                     else:
                         # Fallback: use the whole string as title, auto-number
                         vol_title = v
-                    coerced_vols.append({
-                        "title": vol_title,
-                        "number": vol_num,
-                        "start_chapter": (i * 10) + 1,
-                        "end_chapter": (i + 1) * 10,
-                    })
+                    coerced_vols.append(
+                        {
+                            "title": vol_title,
+                            "number": vol_num,
+                            "start_chapter": (i * 10) + 1,
+                            "end_chapter": (i + 1) * 10,
+                        }
+                    )
                 elif isinstance(v, dict):
                     coerced_vols.append(v)
                 else:
@@ -118,7 +120,7 @@ def _parse_emotional_beat_string(raw: str, index: int = 0) -> dict:
     # Try parenthesized intensity: "压抑（强度0.9）" or "压抑(强度0.9)"
     m = re.search(r"[（(]\s*强度\s*([\d.]+)\s*[）)]", s)
     if m:
-        emotion = s[:m.start()].strip()
+        emotion = s[: m.start()].strip()
         intensity = float(m.group(1))
         if intensity > 1.0:
             intensity /= 10.0
@@ -127,7 +129,7 @@ def _parse_emotional_beat_string(raw: str, index: int = 0) -> dict:
     # Try "情绪，强度N" / "情绪,强度N" / "情绪, 强度N"
     m = re.search(r"[，,]\s*强度\s*([\d.]+)", s)
     if m:
-        emotion = s[:m.start()].strip()
+        emotion = s[: m.start()].strip()
         intensity = float(m.group(1))
         if intensity > 1.0:
             intensity /= 10.0
@@ -136,7 +138,7 @@ def _parse_emotional_beat_string(raw: str, index: int = 0) -> dict:
     # Try "情绪 N" or "情绪：N" (emotion followed by number)
     m = re.search(r"[：:]\s*([\d.]+)$", s)
     if m:
-        emotion = s[:m.start()].strip()
+        emotion = s[: m.start()].strip()
         intensity = float(m.group(1))
         if intensity > 1.0:
             intensity /= 10.0
@@ -144,7 +146,7 @@ def _parse_emotional_beat_string(raw: str, index: int = 0) -> dict:
 
     m = re.search(r"\s+([\d.]+)$", s)
     if m:
-        emotion = s[:m.start()].strip()
+        emotion = s[: m.start()].strip()
         intensity = float(m.group(1))
         if intensity > 1.0:
             intensity /= 10.0
@@ -179,6 +181,7 @@ def _parse_emotional_curve_string(raw: str) -> list[dict]:
 
 class ChapterPlanOutput(BaseModel):
     """LLM output for chapter plan."""
+
     chapter_number: int = Field(default=0)
     title: str = Field(default="")
     goal: str = Field(default="")
@@ -221,6 +224,7 @@ class ChapterPlanOutput(BaseModel):
                             else:
                                 # Strip leading position number if present (e.g. "0.0 压抑" → "压抑")
                                 import re
+
                                 cleaned = re.sub(r"^[\d.]+\s+", "", raw_emotion, count=1)
                                 if cleaned != raw_emotion:
                                     beat["emotion"] = cleaned
@@ -245,6 +249,7 @@ class ChapterPlanOutput(BaseModel):
 # Agent
 # ============================================================
 
+
 class PlotPlannerAgent(BaseAgent):
     """Plans the complete story structure — from master outline to individual chapters."""
 
@@ -266,9 +271,9 @@ class PlotPlannerAgent(BaseAgent):
         system = self.build_system_prompt(
             role="故事架构师",
             expertise="设计引人入胜的故事结构。精通三幕剧、英雄之旅、起承转合等叙事结构，"
-                      "擅长规划主线、支线、转折点和章节节奏。尤其精通{genre}类型的故事设计。".format(
-                          genre="、".join(config.genre)
-                      ),
+            "擅长规划主线、支线、转折点和章节节奏。尤其精通{genre}类型的故事设计。".format(
+                genre="、".join(config.genre)
+            ),
         )
 
         # Build character summary
@@ -291,7 +296,7 @@ class PlotPlannerAgent(BaseAgent):
         user = f"""请为以下小说设计完整的故事结构：
 
 【灵感】{config.inspiration}
-【题材】{', '.join(config.genre)}
+【题材】{", ".join(config.genre)}
 【目标读者】{config.target_readers}
 【篇幅】约{config.target_word_count}字（预估{total_chapters}章，每章约{avg_words_per_chapter}字）
 
@@ -356,8 +361,7 @@ class PlotPlannerAgent(BaseAgent):
         )
 
         logger.info(
-            f"Master outline created: {outline.title}, "
-            f"{len(outline.volumes)} volumes, {outline.chapter_count} chapters"
+            f"Master outline created: {outline.title}, {len(outline.volumes)} volumes, {outline.chapter_count} chapters"
         )
         return outline
 
@@ -380,7 +384,7 @@ class PlotPlannerAgent(BaseAgent):
         system = self.build_system_prompt(
             role="章节规划师",
             expertise="将故事大纲拆解为可执行的章节计划。确保每章有明确的目标、冲突、"
-                      "信息增量和章末钩子，让读者欲罢不能。",
+            "信息增量和章末钩子，让读者欲罢不能。",
         )
 
         # Determine which volume this chapter belongs to
@@ -405,11 +409,11 @@ class PlotPlannerAgent(BaseAgent):
 【大纲】
 {outline_json}
 
-【当前卷】{current_volume.title if current_volume else '未分配'} — {current_volume.logline if current_volume else ''}
+【当前卷】{current_volume.title if current_volume else "未分配"} — {current_volume.logline if current_volume else ""}
 
-【本章转折点】{[(tp.turning_type, tp.description) for tp in chapter_tps] if chapter_tps else '无特定转折点'}
+【本章转折点】{[(tp.turning_type, tp.description) for tp in chapter_tps] if chapter_tps else "无特定转折点"}
 
-【上一章摘要】{prev_chapter_summary or '这是第一章'}
+【上一章摘要】{prev_chapter_summary or "这是第一章"}
 
 【角色当前状态】
 {self._format_character_states(characters, memory)}
@@ -479,7 +483,9 @@ class PlotPlannerAgent(BaseAgent):
             if not isinstance(state, dict):
                 state = state.model_dump()
 
-            lines.append(f"- [{cid}] {char.name}: 位置={state.get('physical', {}).get('location', '未知')}, "
-                         f"情绪={state.get('emotional', {}).get('mood', '正常')}, "
-                         f"弧线进度={state.get('arc_progress', 0.0):.0%}")
+            lines.append(
+                f"- [{cid}] {char.name}: 位置={state.get('physical', {}).get('location', '未知')}, "
+                f"情绪={state.get('emotional', {}).get('mood', '正常')}, "
+                f"弧线进度={state.get('arc_progress', 0.0):.0%}"
+            )
         return "\n".join(lines)

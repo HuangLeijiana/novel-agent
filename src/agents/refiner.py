@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class PolishedOutput(BaseModel):
     """LLM output for polished chapter."""
+
     title: str = Field(default="")
     content: str = Field(..., description="润色后的章节正文")
     revision_notes: str = Field(default="", description="修改说明")
@@ -60,8 +61,8 @@ class RefinerAgent(BaseAgent):
         system = self.build_system_prompt(
             role="文字打磨师",
             expertise="你是一位追求极致的文字编辑。你能让一段普通的文字变得精准、有力、"
-                      "有韵味。你擅长调整句式节奏、删除冗余、增强画面感、让对话更自然。"
-                      "你对AI生成的套路表达有天然的敏感。",
+            "有韵味。你擅长调整句式节奏、删除冗余、增强画面感、让对话更自然。"
+            "你对AI生成的套路表达有天然的敏感。",
             constraints=f"""文风要求：
 - 语调：{style.tone}
 - 句式风格：{style.sentence_style}

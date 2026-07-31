@@ -29,38 +29,38 @@ logger = logging.getLogger(__name__)
 # Prices are estimates — always check the provider's official pricing page.
 PROVIDER_PRICING = {
     "anthropic": {
-        "claude-opus-5":             (15.00, 75.00),
-        "claude-sonnet-4-20250514":  (3.00,  15.00),
-        "claude-haiku-4-5-20251001": (1.00,   5.00),
+        "claude-opus-5": (15.00, 75.00),
+        "claude-sonnet-4-20250514": (3.00, 15.00),
+        "claude-haiku-4-5-20251001": (1.00, 5.00),
     },
     "openai": {
-        "gpt-4.1":    (2.00,  8.00),
-        "gpt-4o":     (2.50, 10.00),
-        "gpt-4o-mini":(0.15,  0.60),
-        "gpt-4.1-nano":(0.10, 0.40),
+        "gpt-4.1": (2.00, 8.00),
+        "gpt-4o": (2.50, 10.00),
+        "gpt-4o-mini": (0.15, 0.60),
+        "gpt-4.1-nano": (0.10, 0.40),
     },
     "openrouter": {
         # OpenRouter prices fluctuate; these are mid-2026 estimates.
         # Use openrouter.ai/models for current pricing.
-        "anthropic/claude-sonnet-4":    (3.00, 15.00),
-        "anthropic/claude-haiku-4.5":   (1.00,  5.00),
-        "anthropic/claude-opus-4":      (15.00, 75.00),
-        "openai/gpt-4o":                (2.50, 10.00),
-        "openai/gpt-4o-mini":           (0.15,  0.60),
-        "google/gemini-2.5-pro":        (1.25, 10.00),
-        "google/gemini-2.5-flash":      (0.15,  0.60),
+        "anthropic/claude-sonnet-4": (3.00, 15.00),
+        "anthropic/claude-haiku-4.5": (1.00, 5.00),
+        "anthropic/claude-opus-4": (15.00, 75.00),
+        "openai/gpt-4o": (2.50, 10.00),
+        "openai/gpt-4o-mini": (0.15, 0.60),
+        "google/gemini-2.5-pro": (1.25, 10.00),
+        "google/gemini-2.5-flash": (0.15, 0.60),
     },
     "modelscope": {
         # ModelScope pricing varies by model. Most are free during beta.
         # Set MODELscope_API_KEY for higher rate limits.
         "Qwen/Qwen3-235B-A22B": (0.0, 0.0),
-        "Qwen/Qwen3-8B":        (0.0, 0.0),
+        "Qwen/Qwen3-8B": (0.0, 0.0),
     },
     "dashscope": {
         # Alibaba DashScope (Qwen official API)
-        "qwen-max":    (2.00, 6.00),
-        "qwen-plus":   (1.00, 2.00),
-        "qwen-turbo":  (0.15, 0.60),
+        "qwen-max": (2.00, 6.00),
+        "qwen-plus": (1.00, 2.00),
+        "qwen-turbo": (0.15, 0.60),
     },
     "ollama": {
         # Local — electricity only
@@ -76,24 +76,48 @@ FALLBACK_PRICE = (1.0, 5.0)  # conservative estimate
 # ========================================================================
 
 SYSTEM_PROMPT_TOKENS = {
-    "architect": 800,  "character_manager": 600, "plot_planner": 700,
-    "writer": 1200,    "editor": 900,            "continuity_checker": 500,
-    "reader_simulator": 400, "refiner": 600,     "reviewer": 800,
-    "memory_manager": 500, "topic_scout": 700,   "orchestrator": 400,
+    "architect": 800,
+    "character_manager": 600,
+    "plot_planner": 700,
+    "writer": 1200,
+    "editor": 900,
+    "continuity_checker": 500,
+    "reader_simulator": 400,
+    "refiner": 600,
+    "reviewer": 800,
+    "memory_manager": 500,
+    "topic_scout": 700,
+    "orchestrator": 400,
 }
 
 BASE_USER_PROMPT_TOKENS = {
-    "architect": 2000,  "character_manager": 1500, "plot_planner": 2000,
-    "writer": 3000,     "editor": 3500,            "continuity_checker": 2500,
-    "reader_simulator": 3000, "refiner": 3000,     "reviewer": 3500,
-    "memory_manager": 2000, "topic_scout": 1000,   "orchestrator": 800,
+    "architect": 2000,
+    "character_manager": 1500,
+    "plot_planner": 2000,
+    "writer": 3000,
+    "editor": 3500,
+    "continuity_checker": 2500,
+    "reader_simulator": 3000,
+    "refiner": 3000,
+    "reviewer": 3500,
+    "memory_manager": 2000,
+    "topic_scout": 1000,
+    "orchestrator": 800,
 }
 
 OUTPUT_TOKENS = {
-    "architect": 1500,  "character_manager": 2000, "plot_planner": 2500,
-    "writer": 4000,     "editor": 1500,            "continuity_checker": 800,
-    "reader_simulator": 600,  "refiner": 3000,     "reviewer": 1200,
-    "memory_manager": 1000, "topic_scout": 2000,   "orchestrator": 500,
+    "architect": 1500,
+    "character_manager": 2000,
+    "plot_planner": 2500,
+    "writer": 4000,
+    "editor": 1500,
+    "continuity_checker": 800,
+    "reader_simulator": 600,
+    "refiner": 3000,
+    "reviewer": 1200,
+    "memory_manager": 1000,
+    "topic_scout": 2000,
+    "orchestrator": 500,
 }
 
 # Which agents are called in each phase
@@ -110,6 +134,7 @@ CONTEXT_GROWTH_PER_CHAPTER = 500
 @dataclass
 class ChapterCost:
     """Cost breakdown for a single chapter."""
+
     chapter_number: int
     writing_cost: float = 0.0
     review_cost: float = 0.0
@@ -124,6 +149,7 @@ class ChapterCost:
 @dataclass
 class NovelCostEstimate:
     """Complete cost estimate for a novel."""
+
     total_chapters: int
     provider: str = ""
     quality_model: str = ""
@@ -185,6 +211,7 @@ class CostCalculator:
         # Auto-detect from settings if not provided
         if not provider:
             from ..config.settings import get_settings
+
             s = get_settings()
             self.provider = s.active_provider
             # Best-effort model detection
@@ -228,10 +255,9 @@ class CostCalculator:
         # Scenario analysis
         estimate.initial_write_total = estimate.total_cost
         revision_rate = 0.30
-        revision_cost = sum(
-            c.review_cost + c.polish_cost + c.adversarial_review_cost
-            for c in estimate.per_chapter
-        ) * revision_rate
+        revision_cost = (
+            sum(c.review_cost + c.polish_cost + c.adversarial_review_cost for c in estimate.per_chapter) * revision_rate
+        )
         estimate.with_one_revision_total = estimate.total_cost + revision_cost
         estimate.with_two_revisions_total = estimate.total_cost + revision_cost * 2
 
@@ -275,6 +301,7 @@ class CostCalculator:
         def _agent_cost(agent_type: str) -> tuple[float, int, int]:
             # Quality agents use quality_model, budget agents use budget_model
             from ..config.model_assignments import BUDGET_AGENTS
+
             model = self.budget_model if agent_type in BUDGET_AGENTS else self.quality_model
             input_tokens = (
                 SYSTEM_PROMPT_TOKENS.get(agent_type, 600)
@@ -283,10 +310,7 @@ class CostCalculator:
             )
             output_tokens = OUTPUT_TOKENS.get(agent_type, 1500)
             input_price, output_price = self._get_price(model)
-            cost = (
-                input_price * input_tokens / 1_000_000
-                + output_price * output_tokens / 1_000_000
-            )
+            cost = input_price * input_tokens / 1_000_000 + output_price * output_tokens / 1_000_000
             return cost, input_tokens, output_tokens
 
         for agent_list, cost_attr in [
@@ -308,6 +332,7 @@ class CostCalculator:
 
 # ── Convenience ───────────────────────────────────────────────────
 
+
 def estimate_novel_cost(
     total_chapters: int = 30,
     provider: str = "",
@@ -327,12 +352,14 @@ def print_cost_comparison(total_chapters: int = 30):
     """Print a comparison of all supported providers."""
     calc = CostCalculator()
     estimates = calc.compare_providers(total_chapters)
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"  Cost Comparison: {total_chapters} chapters ({calc.words_per_chapter} words/ch)")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print(f"  {'Provider':<20} {'Quality Model':<32} {'Base':>10} {'+Rev':>10}")
-    print(f"  {'-'*65}")
+    print(f"  {'-' * 65}")
     for name, est in estimates.items():
-        print(f"  {name:<20} {est.quality_model:<32} ${est.initial_write_total:>8.2f} ${est.with_one_revision_total:>8.2f}")
+        print(
+            f"  {name:<20} {est.quality_model:<32} ${est.initial_write_total:>8.2f} ${est.with_one_revision_total:>8.2f}"
+        )
     print(f"  {'ollama (local)':<20} {'any (free)':<32} {'$0.00':>10} {'$0.00':>10}")
-    print(f"{'='*70}\n")
+    print(f"{'=' * 70}\n")

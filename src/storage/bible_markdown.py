@@ -86,9 +86,7 @@ class BibleMarkdownStore:
         self._save_factions(bible.factions)
         self._save_style(bible.style_contract)
         self._save_themes(bible.themes, bible.core_conflicts)
-        self._save_pleasure_points(
-            bible.pleasure_point_model, bible.narrative_constraints
-        )
+        self._save_pleasure_points(bible.pleasure_point_model, bible.narrative_constraints)
         if characters:
             self._save_characters(characters)
         logger.info(f"Bible saved to {self._bible_dir} ({len(ALL_BIBLE_FILES)} files)")
@@ -97,8 +95,8 @@ class BibleMarkdownStore:
         """Save world building as Markdown."""
         lines = [
             "---",
-            f"framework_version: \"1.0.0\"",
-            f"generated_at: \"{datetime.now().isoformat()}\"",
+            f'framework_version: "1.0.0"',
+            f'generated_at: "{datetime.now().isoformat()}"',
             "category: world-building",
             "---",
             "",
@@ -122,24 +120,30 @@ class BibleMarkdownStore:
             "",
         ]
         if world.magic_system:
-            lines.extend([
-                "## 魔法/力量体系",
-                "",
-                world.magic_system,
-                "",
-            ])
+            lines.extend(
+                [
+                    "## 魔法/力量体系",
+                    "",
+                    world.magic_system,
+                    "",
+                ]
+            )
         if world.power_progression:
-            lines.extend([
-                "## 力量进阶体系",
-                "",
-                world.power_progression,
-                "",
-            ])
+            lines.extend(
+                [
+                    "## 力量进阶体系",
+                    "",
+                    world.power_progression,
+                    "",
+                ]
+            )
         if world.special_rules:
-            lines.extend([
-                "## 特殊世界规则",
-                "",
-            ])
+            lines.extend(
+                [
+                    "## 特殊世界规则",
+                    "",
+                ]
+            )
             for rule in world.special_rules:
                 lines.append(f"- {rule}")
             lines.append("")
@@ -150,8 +154,8 @@ class BibleMarkdownStore:
         """Save factions as Markdown."""
         lines = [
             "---",
-            f"framework_version: \"1.0.0\"",
-            f"generated_at: \"{datetime.now().isoformat()}\"",
+            f'framework_version: "1.0.0"',
+            f'generated_at: "{datetime.now().isoformat()}"',
             "category: factions",
             "---",
             "",
@@ -160,17 +164,19 @@ class BibleMarkdownStore:
         ]
 
         for i, f in enumerate(factions, 1):
-            lines.extend([
-                f"## {i}. {f.name}",
-                "",
-                f"- **ID**：{f.id}",
-                f"- **类型**：{f.type}",
-                f"- **目标**：{f.goal}",
-                f"- **层级结构**：{f.hierarchy or '待定'}",
-                f"- **资源**：{f.resources or '待定'}",
-                f"- **意识形态**：{f.ideology or '待定'}",
-                "",
-            ])
+            lines.extend(
+                [
+                    f"## {i}. {f.name}",
+                    "",
+                    f"- **ID**：{f.id}",
+                    f"- **类型**：{f.type}",
+                    f"- **目标**：{f.goal}",
+                    f"- **层级结构**：{f.hierarchy or '待定'}",
+                    f"- **资源**：{f.resources or '待定'}",
+                    f"- **意识形态**：{f.ideology or '待定'}",
+                    "",
+                ]
+            )
             if f.description:
                 lines.append(f.description)
                 lines.append("")
@@ -181,8 +187,8 @@ class BibleMarkdownStore:
         """Save style contract as Markdown."""
         lines = [
             "---",
-            f"framework_version: \"1.0.0\"",
-            f"generated_at: \"{datetime.now().isoformat()}\"",
+            f'framework_version: "1.0.0"',
+            f'generated_at: "{datetime.now().isoformat()}"',
             "category: writing-style",
             "---",
             "",
@@ -215,14 +221,12 @@ class BibleMarkdownStore:
 
         self._write(FILE_STYLE, "\n".join(lines))
 
-    def _save_themes(
-        self, themes: list[Theme], conflicts: list[CoreConflict]
-    ) -> None:
+    def _save_themes(self, themes: list[Theme], conflicts: list[CoreConflict]) -> None:
         """Save themes and conflicts as Markdown."""
         lines = [
             "---",
-            f"framework_version: \"1.0.0\"",
-            f"generated_at: \"{datetime.now().isoformat()}\"",
+            f'framework_version: "1.0.0"',
+            f'generated_at: "{datetime.now().isoformat()}"',
             "category: themes-and-conflicts",
             "---",
             "",
@@ -259,8 +263,8 @@ class BibleMarkdownStore:
         """Save pleasure point model as Markdown."""
         lines = [
             "---",
-            f"framework_version: \"1.0.0\"",
-            f"generated_at: \"{datetime.now().isoformat()}\"",
+            f'framework_version: "1.0.0"',
+            f'generated_at: "{datetime.now().isoformat()}"',
             "category: pleasure-points",
             "---",
             "",
@@ -290,8 +294,8 @@ class BibleMarkdownStore:
         """
         lines = [
             "---",
-            f"framework_version: \"1.0.0\"",
-            f"generated_at: \"{datetime.now().isoformat()}\"",
+            f'framework_version: "1.0.0"',
+            f'generated_at: "{datetime.now().isoformat()}"',
             "category: characters",
             "---",
             "",
@@ -306,10 +310,7 @@ class BibleMarkdownStore:
         for cid, char in characters.characters.items():
             personality_brief = (char.personality or "")[:40]
             motivation_brief = (char.motivation or "")[:40]
-            lines.append(
-                f"| {cid} | {char.name} | {char.role} | "
-                f"{personality_brief} | {motivation_brief} |"
-            )
+            lines.append(f"| {cid} | {char.name} | {char.role} | {personality_brief} | {motivation_brief} |")
         lines.append("")
 
         self._write(FILE_CHARACTERS, "\n".join(lines))

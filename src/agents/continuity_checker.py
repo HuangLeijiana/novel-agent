@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class ContinuityOutput(BaseModel):
     """LLM output for continuity check."""
+
     issues: list[Issue] = Field(default_factory=list)
 
 
@@ -37,22 +38,20 @@ class ContinuityCheckerAgent(BaseAgent):
         """Check that timeline events are consistent and correctly ordered."""
         system = self.build_system_prompt(
             role="时间线核查员",
-            expertise="你精确追踪故事中的时间流动。你能发现时间跳跃错误、事件顺序矛盾、"
-                      "以及任何时间相关的不一致。",
+            expertise="你精确追踪故事中的时间流动。你能发现时间跳跃错误、事件顺序矛盾、以及任何时间相关的不一致。",
         )
 
         prev_events = ""
         if memory and memory.timeline:
             recent = memory.timeline[-10:]  # Last 10 events
             prev_events = "\n".join(
-                f"- [{e.id}] 第{e.chapter}章: {e.description} (故事时间: {e.in_story_time})"
-                for e in recent
+                f"- [{e.id}] 第{e.chapter}章: {e.description} (故事时间: {e.in_story_time})" for e in recent
             )
 
         user = f"""检查本章的时间线一致性：
 
 【前序时间线事件】
-{prev_events or '无（第一章）'}
+{prev_events or "无（第一章）"}
 
 【本章内容（节选）】
 {draft.content[:800]}
@@ -81,7 +80,7 @@ class ContinuityCheckerAgent(BaseAgent):
         system = self.build_system_prompt(
             role="角色一致性检查员",
             expertise="你能发现角色行为与其设定性格、动机、当前状态之间的矛盾。"
-                      "你不会阻止角色成长或变化，但会标记没有合理解释的突然转变。",
+            "你不会阻止角色成长或变化，但会标记没有合理解释的突然转变。",
         )
 
         char_briefs = []
@@ -90,8 +89,7 @@ class ContinuityCheckerAgent(BaseAgent):
             if memory and cid in memory.character_states:
                 state = memory.character_states[cid]
             char_briefs.append(
-                f"- [{cid}] {char.name}: 性格={char.personality[:60]}, "
-                f"动机={char.motivation[:60]}, 当前状态={state}"
+                f"- [{cid}] {char.name}: 性格={char.personality[:60]}, 动机={char.motivation[:60]}, 当前状态={state}"
             )
         char_text = "\n".join(char_briefs)
 
@@ -126,7 +124,7 @@ class ContinuityCheckerAgent(BaseAgent):
         system = self.build_system_prompt(
             role="因果关系检查员",
             expertise="你精准分析事件之间的因果链。你能发现'因为剧情需要所以发生'的机械事件，"
-                      "以及缺乏合理前因的'巧合'。",
+            "以及缺乏合理前因的'巧合'。",
         )
 
         user = f"""检查本章事件的因果关系：
@@ -157,7 +155,7 @@ class ContinuityCheckerAgent(BaseAgent):
         system = self.build_system_prompt(
             role="伏笔追踪员",
             expertise="你精确追踪故事中每一个伏笔的生命周期：埋下、暗示推进、回收。"
-                      "你能发现被遗忘的伏笔和回收不充分的伏笔。",
+            "你能发现被遗忘的伏笔和回收不充分的伏笔。",
         )
 
         active_fs = ""
@@ -170,7 +168,7 @@ class ContinuityCheckerAgent(BaseAgent):
         user = f"""检查本章的伏笔处理：
 
 【活跃伏笔】
-{active_fs or '无'}
+{active_fs or "无"}
 
 【本章内容（节选）】
 {draft.content[:800]}
