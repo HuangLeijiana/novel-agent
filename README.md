@@ -173,21 +173,39 @@ CONTINUITY_CHECKER_MODEL=deepseek-chat
 # Install dev dependencies
 uv sync --dev
 
-# Run tests
-uv run pytest
+# Run unit tests (no API key needed, runs in < 1s)
+uv run pytest tests/test_unit.py -v
 
-# Run specific test suite
-uv run pytest tests/test_writer_modelscope.py -v -s
+# Run integration tests (needs API key configured in .env)
+uv run pytest tests/ -v -k "modelscope"
+
+# Run all tests
+uv run pytest tests/ -v
 
 # Run the app in dev mode
 uv run python -m src.main
 ```
 
-### Running Tests
+### Docker
 
-- **Unit tests** — Pydantic model validation, prompt building, JSON repair logic
-- **Integration tests** — Full agent pipeline against real LLM APIs
-- Set `DEFAULT_PROVIDER=modelscope` + `DEFAULT_MODEL=Qwen/Qwen3-8B` for fast/cheap CI runs
+```bash
+# Build and run with docker-compose
+cp .env.example .env   # edit with your API key first
+docker compose up -d
+
+# Or build manually
+docker build -t novel-agent .
+docker run -p 8000:8000 -v $(pwd)/.env:/app/.env:ro -v $(pwd)/workspace:/app/workspace novel-agent
+```
+
+### Testing
+
+| Type | Command | API Key | What It Tests |
+|------|---------|---------|---------------|
+| **Unit** | `pytest tests/test_unit.py -v` | No | Pydantic models, JSON repair, content safety, prompts, settings (50+ tests) |
+| **Integration** | `pytest tests/ -v -k "modelscope"` | Yes | End-to-end agent pipeline against real LLMs |
+
+CI runs unit tests on Python 3.11/3.12/3.13 on every push and PR via GitHub Actions.
 
 ## FAQ
 

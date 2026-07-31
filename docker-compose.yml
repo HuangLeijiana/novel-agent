@@ -1,0 +1,15 @@
+services:
+  novel-agent:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount your .env file with API keys
+      - ./.env:/app/.env:ro
+      # Persist generated novels outside the container
+      - ./workspace:/app/workspace
+    environment:
+      - WORKSPACE_ROOT=/app/workspace
+      - HOST=0.0.0.0
+      - PORT=8000
+    restart: unless-stopped
