@@ -1,11 +1,10 @@
 """Plot Planner Agent — master outline, volume structure, chapter planning."""
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from ..llm.scheduler import ModelScheduler
 from ..models.bible import NovelBible
 from ..models.characters import CharacterRegistry
 from ..models.memory import MemoryState
@@ -34,7 +33,7 @@ class MasterOutlineOutput(BaseModel):
     """LLM output for master outline."""
 
     title: str = Field(default="", description="小说标题")
-    subtitle: Optional[str] = Field(default=None, description="副标题")
+    subtitle: str | None = Field(default=None, description="副标题")
     logline: str = Field(default="", description="一句话简介")
     main_plot: list[PlotArc] = Field(default_factory=list)
     subplots: list[PlotArc] = Field(default_factory=list)
@@ -376,7 +375,7 @@ class PlotPlannerAgent(BaseAgent):
         bible: NovelBible,
         characters: CharacterRegistry,
         outline: MasterOutline,
-        memory: Optional[MemoryState] = None,
+        memory: MemoryState | None = None,
     ) -> ChapterPlan:
         """Plan a single chapter in detail."""
         logger.info(f"Planning chapter {chapter_number}...")
@@ -469,7 +468,7 @@ class PlotPlannerAgent(BaseAgent):
     def _format_character_states(
         self,
         characters: CharacterRegistry,
-        memory: Optional[MemoryState],
+        memory: MemoryState | None,
     ) -> str:
         """Format current character states for the prompt."""
         lines = []

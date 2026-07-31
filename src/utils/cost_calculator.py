@@ -15,7 +15,6 @@ Usage:
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
 
 from ..config.settings import PROVIDER_PRESETS
 
@@ -172,12 +171,12 @@ class NovelCostEstimate:
             f"  Quality model:   {self.quality_model}",
             f"  Budget model:    {self.budget_model}",
             "",
-            f"  [Scenarios]",
+            "  [Scenarios]",
             f"  All pass 1st attempt:    ${self.initial_write_total:.2f}",
             f"  30% need 1 revision:     ${self.with_one_revision_total:.2f}",
             f"  15% need 2 revisions:    ${self.with_two_revisions_total:.2f}",
             "",
-            f"  [Tokens]",
+            "  [Tokens]",
             f"  Total input:   {self.total_input_tokens:,}",
             f"  Total output:  {self.total_output_tokens:,}",
             f"  Avg/chapter:   {(self.total_input_tokens + self.total_output_tokens) // max(self.total_chapters, 1):,}",
@@ -232,7 +231,7 @@ class CostCalculator:
     def estimate_novel(
         self,
         total_chapters: int = 30,
-        words_per_chapter: Optional[int] = None,
+        words_per_chapter: int | None = None,
     ) -> NovelCostEstimate:
         """Estimate total cost for writing a complete novel."""
         if words_per_chapter:

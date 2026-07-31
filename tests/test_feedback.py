@@ -8,18 +8,17 @@ Covers:
 - Edge cases (empty, multiple tags)
 """
 
-import pytest
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from models.feedback import (
-    FeedbackEntry,
-    FeedbackSentiment,
-    FeedbackReasonTag,
-    FeedbackSummary,
     REASON_TAG_LABELS,
+    FeedbackEntry,
+    FeedbackReasonTag,
+    FeedbackSentiment,
+    FeedbackSummary,
 )
 
 

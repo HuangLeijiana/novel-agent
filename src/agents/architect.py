@@ -2,16 +2,13 @@
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from ..llm.scheduler import ModelScheduler
 from ..models.bible import (
     CoreConflict,
     Faction,
-    NarrativeRules,
-    NovelBible,
     StyleContract,
     Theme,
     WorldBuilding,
@@ -46,7 +43,7 @@ def _normalize_str_list(value: Any) -> list[str]:
     return [str(value)]
 
 
-def _normalize_optional_str(value: Any) -> Optional[str]:
+def _normalize_optional_str(value: Any) -> str | None:
     """Normalise a field that should be Optional[str] but may arrive as dict/list."""
     if value is None:
         return None
@@ -66,8 +63,8 @@ class WorldBuildingOutput(BaseModel):
     history: str = Field(default="", description="关键历史")
     culture: str = Field(default="", description="文化习俗")
     technology_level: str = Field(default="", description="科技/魔法水平")
-    magic_system: Optional[str] = Field(default=None, description="魔法/力量体系")
-    power_progression: Optional[str] = Field(default=None, description="力量进阶体系")
+    magic_system: str | None = Field(default=None, description="魔法/力量体系")
+    power_progression: str | None = Field(default=None, description="力量进阶体系")
     special_rules: list[str] = Field(default_factory=list, description="特殊世界规则")
 
     @field_validator("special_rules", mode="before")
@@ -77,7 +74,7 @@ class WorldBuildingOutput(BaseModel):
 
     @field_validator("magic_system", "power_progression", mode="before")
     @classmethod
-    def coerce_optional_str(cls, v: Any) -> Optional[str]:
+    def coerce_optional_str(cls, v: Any) -> str | None:
         return _normalize_optional_str(v)
 
 

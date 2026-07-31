@@ -15,9 +15,9 @@ Usage:
 
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, TemplateNotFound, StrictUndefined
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class PromptLoader:
     {method}_system.j2 and {method}_user.j2 templates.
     """
 
-    def __init__(self, template_dir: Optional[Path] = None):
+    def __init__(self, template_dir: Path | None = None):
         self._template_dir = template_dir or _TEMPLATE_DIR
         self._env = Environment(
             loader=FileSystemLoader(str(self._template_dir)),
@@ -92,7 +92,7 @@ class PromptLoader:
         method: str,
         prompt_type: str = "system",
         **variables: Any,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Render a template, returning None if it doesn't exist.
 
         Use this for graceful fallback to inline prompts.
@@ -137,7 +137,7 @@ class PromptLoader:
 
 
 # Module-level singleton for convenience
-_loader: Optional[PromptLoader] = None
+_loader: PromptLoader | None = None
 
 
 def get_prompt_loader() -> PromptLoader:

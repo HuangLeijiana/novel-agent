@@ -22,7 +22,6 @@ mechanical issues before the expensive LLM review phase.
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Optional
 
 from ..models.bible import NovelBible
 from ..models.chapter import ChapterDraft
@@ -122,8 +121,8 @@ class ChapterInspector:
     def inspect(
         self,
         draft: ChapterDraft,
-        chapter_plan: Optional[ChapterPlan] = None,
-        bible: Optional[NovelBible] = None,
+        chapter_plan: ChapterPlan | None = None,
+        bible: NovelBible | None = None,
     ) -> InspectionResult:
         """Run all structural checks on a chapter draft.
 
@@ -175,7 +174,7 @@ class ChapterInspector:
             lengths = [len(p) for p in paragraphs]
             result.avg_paragraph_length = sum(lengths) / len(lengths)
             result.max_paragraph_length = max(lengths)
-            result.wall_of_text_count = sum(1 for l in lengths if l > self.MAX_PARAGRAPH_LENGTH)
+            result.wall_of_text_count = sum(1 for ln in lengths if ln > self.MAX_PARAGRAPH_LENGTH)
             if result.wall_of_text_count > 0:
                 result.warnings.append(
                     f"发现{result.wall_of_text_count}个超长段落（>{self.MAX_PARAGRAPH_LENGTH}字），"

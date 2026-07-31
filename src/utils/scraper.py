@@ -6,9 +6,7 @@ Fanqie: Multi-category JSON API + SSR book ID fallback for broader coverage.
 
 import asyncio
 import logging
-import re
 import time
-from typing import Optional
 
 import httpx
 
@@ -57,7 +55,7 @@ HEADERS = {
 # ================================================================
 
 
-async def scrape_feilu_rank() -> Optional[str]:
+async def scrape_feilu_rank() -> str | None:
     """Scrape Feilu (飞卢) ranking pages using headless Chromium.
 
     Feilu rank pages (b.faloo.com/Rank_*.html) are JavaScript-rendered.
@@ -262,7 +260,7 @@ async def _fetch_fanqie_rank(rank_type: int, gender: int, limit: int = 10) -> li
     return books[:limit]
 
 
-async def scrape_fanqie_rank() -> Optional[str]:
+async def scrape_fanqie_rank() -> str | None:
     """Scrape Fanqie (番茄) ranking data from multiple sources.
 
     Strategy (in order):
@@ -319,7 +317,7 @@ async def scrape_fanqie_rank() -> Optional[str]:
     return None
 
 
-async def _scrape_fanqie_html() -> Optional[str]:
+async def _scrape_fanqie_html() -> str | None:
     """Fetch the Fanqie ranking page HTML (contains SSR data)."""
     try:
         async with httpx.AsyncClient(timeout=20, follow_redirects=True, headers=HEADERS) as client:
@@ -331,7 +329,7 @@ async def _scrape_fanqie_html() -> Optional[str]:
         return None
 
 
-def _extract_fanqie_ssr_book_ids(html: Optional[str]) -> list[str]:
+def _extract_fanqie_ssr_book_ids(html: str | None) -> list[str]:
     """Extract clean book IDs from Fanqie's SSR __INITIAL_STATE__ JSON.
 
     Book IDs are integers — they are NOT affected by the custom font
@@ -388,7 +386,7 @@ def _extract_fanqie_ssr_book_ids(html: Optional[str]) -> list[str]:
         return []
 
 
-async def _resolve_fanqie_book_detail(book_id: str) -> Optional[dict]:
+async def _resolve_fanqie_book_detail(book_id: str) -> dict | None:
     """Look up a single book's clean metadata via the Fanqie book detail API."""
     headers = {**HEADERS, "Referer": f"https://fanqienovel.com/page/{book_id}"}
     try:
@@ -437,7 +435,7 @@ async def _scrape_fanqie_ssr_ids(existing_ids: set[str]) -> list[dict]:
     # Resolve book details concurrently (max 5 at a time to be polite)
     sem = asyncio.Semaphore(5)
 
-    async def _resolve_one(bid: str) -> Optional[dict]:
+    async def _resolve_one(bid: str) -> dict | None:
         async with sem:
             return await _resolve_fanqie_book_detail(bid)
 
@@ -462,7 +460,7 @@ def _format_fanqie_books(books: list[dict]) -> str:
     return "\n".join(lines)
 
 
-async def scrape_all() -> dict[str, Optional[str]]:
+async def scrape_all() -> dict[str, str | None]:
     """Scrape both platforms concurrently."""
     import asyncio
 

@@ -12,11 +12,9 @@ The reviewer's job is to be a SKEPTIC — find problems, not be nice.
 """
 
 import logging
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from ..llm.scheduler import ModelScheduler
 from ..models.bible import NovelBible
 from ..models.chapter import ChapterDraft
 from ..models.characters import CharacterRegistry
@@ -106,9 +104,9 @@ class ReviewerAgent(BaseAgent):
         chapter_plan: ChapterPlan,
         bible: NovelBible,
         characters: CharacterRegistry,
-        outline: Optional[MasterOutline] = None,
-        memory: Optional[MemoryState] = None,
-        config: Optional[ProjectConfig] = None,
+        outline: MasterOutline | None = None,
+        memory: MemoryState | None = None,
+        config: ProjectConfig | None = None,
     ) -> AdversarialReviewOutput:
         """Perform an adversarial review of a chapter draft.
 
@@ -236,7 +234,7 @@ class ReviewerAgent(BaseAgent):
     def _build_adversarial_system_prompt(
         self,
         bible: NovelBible,
-        config: Optional[ProjectConfig] = None,
+        config: ProjectConfig | None = None,
     ) -> str:
         """Build the adversarial system prompt.
 
@@ -276,8 +274,8 @@ class ReviewerAgent(BaseAgent):
         chapter_plan: ChapterPlan,
         bible: NovelBible,
         characters: CharacterRegistry,
-        outline: Optional[MasterOutline] = None,
-        memory: Optional[MemoryState] = None,
+        outline: MasterOutline | None = None,
+        memory: MemoryState | None = None,
     ) -> str:
         """Build the adversarial user prompt with independent context.
 

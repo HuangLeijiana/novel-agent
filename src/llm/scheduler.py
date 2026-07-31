@@ -3,7 +3,8 @@
 import json
 import logging
 import re
-from typing import Any, AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
@@ -32,7 +33,7 @@ def _try_parse_json(raw: str) -> Any:
     # Attempt 1: direct parse
     try:
         return json.loads(text)
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError:
         pass
 
     # Attempt 2: escape literal newlines/tabs within JSON strings
@@ -195,7 +196,7 @@ class ModelScheduler:
     - Lazy provider initialization
     """
 
-    def __init__(self, assignments: Optional[list[ModelAssignment]] = None):
+    def __init__(self, assignments: list[ModelAssignment] | None = None):
         """
         Args:
             assignments: List of ModelAssignment configurations.
@@ -222,9 +223,9 @@ class ModelScheduler:
         agent_type: str,
         system_prompt: str,
         user_prompt: str,
-        response_model: Optional[type[BaseModel]] = None,
-        temperature_override: Optional[float] = None,
-        max_tokens_override: Optional[int] = None,
+        response_model: type[BaseModel] | None = None,
+        temperature_override: float | None = None,
+        max_tokens_override: int | None = None,
     ) -> LLMResponse:
         """Generate a response using the model assigned to this agent type.
 
@@ -287,8 +288,8 @@ class ModelScheduler:
         system_prompt: str,
         user_prompt: str,
         response_model: type[BaseModel],
-        temperature_override: Optional[float] = None,
-        max_tokens_override: Optional[int] = None,
+        temperature_override: float | None = None,
+        max_tokens_override: int | None = None,
     ) -> BaseModel:
         """Generate and parse a structured response.
 
@@ -344,8 +345,8 @@ class ModelScheduler:
         agent_type: str,
         system_prompt: str,
         user_prompt: str,
-        temperature_override: Optional[float] = None,
-        max_tokens_override: Optional[int] = None,
+        temperature_override: float | None = None,
+        max_tokens_override: int | None = None,
     ) -> AsyncGenerator[str, None]:
         """Stream a text generation, yielding tokens as they arrive.
 

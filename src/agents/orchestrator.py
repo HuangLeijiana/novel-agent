@@ -2,25 +2,18 @@
 
 import asyncio
 import logging
-from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from ..llm.scheduler import ModelScheduler
 from ..models.bible import NovelBible
-from ..models.chapter import ChapterDraft, Fact, PolishedChapter, StateChange
-from ..models.characters import CharacterRegistry
 from ..models.common import AgentLogEntry
-from ..models.memory import MemoryState
-from ..models.outline import ChapterPlan, MasterOutline
-from ..models.project import ProjectConfig
-from ..models.review import ReviewReport
+from ..models.review import Issue, ReviewReport
 from ..models.state import MainState
 from ..models.topic import CandidateTopic, ScanReport, TitleSynopsisReport, TopicResearchState
 from ..storage.bible_markdown import BibleMarkdownStore
 from .architect import ArchitectAgent
+from .chapter_inspector import ChapterInspector
 from .character_manager import CharacterManagerAgent
-from .chapter_inspector import ChapterInspector, InspectionResult
 from .continuity_checker import ContinuityCheckerAgent
 from .editor import EditorAgent
 from .memory_manager import MemoryManagerAgent
@@ -101,8 +94,8 @@ def _build_topic_context(state: "MainState") -> tuple[str, list[str]]:
 
 
 def _extract_genres_from_scans(
-    feilu: Optional[ScanReport] = None,
-    fanqie: Optional[ScanReport] = None,
+    feilu: ScanReport | None = None,
+    fanqie: ScanReport | None = None,
 ) -> list[str]:
     """Extract genre/direction names from scan reports when cross-platform
     analysis produces no directions (e.g., single-platform scan or thin data).
@@ -197,8 +190,8 @@ class OrchestratorAgent:
     async def scan_platforms(
         self,
         state: MainState,
-        feilu_content: Optional[str] = None,
-        fanqie_content: Optional[str] = None,
+        feilu_content: str | None = None,
+        fanqie_content: str | None = None,
     ) -> MainState:
         """Scan 飞卢 and 番茄 real rankings for trending topics.
 

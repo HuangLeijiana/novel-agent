@@ -1,17 +1,14 @@
 """Memory Manager Agent — updates memory artifacts after each chapter."""
 
 import logging
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-from ..llm.scheduler import ModelScheduler
 from ..models.bible import NovelBible
 from ..models.chapter import ChapterDraft, Fact, PolishedChapter
 from ..models.characters import CharacterRegistry
 from ..models.memory import (
     ForeshadowingEntry,
-    ForeshadowingTracker,
     LongTermMemory,
     MemoryState,
     ShortTermMemory,
@@ -98,7 +95,7 @@ class MemoryManagerAgent(BaseAgent):
         draft: ChapterDraft,
         bible: NovelBible,
         characters: CharacterRegistry,
-        existing_memory: Optional[MemoryState] = None,
+        existing_memory: MemoryState | None = None,
     ) -> MemoryState:
         """Update all memory artifacts after chapter completion.
 

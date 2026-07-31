@@ -1,6 +1,6 @@
 """FastAPI dependency injection — provides shared services to route handlers."""
 
-from ..config.settings import get_settings, Settings
+from ..config.settings import Settings, get_settings
 from ..llm.scheduler import ModelScheduler
 from ..storage.file_manager import ProjectFileManager
 

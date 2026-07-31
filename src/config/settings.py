@@ -14,10 +14,8 @@ Examples:
 """
 
 from pathlib import Path
-from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 
 # ---------------------------------------------------------------------------
 # Known provider model lists (for documentation + UI hints)
@@ -165,7 +163,7 @@ class Settings(BaseSettings):
 
 
 # Singleton
-_settings: Optional[Settings] = None
+_settings: Settings | None = None
 
 
 def get_settings() -> Settings:

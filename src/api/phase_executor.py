@@ -1,18 +1,15 @@
 """Phase executor — runs individual workflow phases with streaming support."""
 
-import asyncio
 import logging
-from typing import Any, Callable, Optional
 
 from ..agents.orchestrator import OrchestratorAgent
-from ..llm.scheduler import ModelScheduler
 from ..models.state import MainState
 from ..storage.file_manager import ProjectFileManager
 
 logger = logging.getLogger(__name__)
 
 # Module-level storage for scan data (set by routes before phase execution)
-_pending_scan_data: dict[str, Optional[str]] = {}
+_pending_scan_data: dict[str, str | None] = {}
 
 # Chinese labels for each phase
 PHASE_LABELS = {
@@ -271,8 +268,6 @@ def get_phase_data(state: MainState, phase: str) -> dict:
             "characters": {cid: c.model_dump() for cid, c in state.characters.characters.items()},
         }
     elif phase == "master_outline" and state.outline:
-        from ..models.outline import MasterOutline
-
         d = state.outline.model_dump()
         d["main_plot"] = [a.model_dump() for a in state.outline.main_plot]
         d["subplots"] = [a.model_dump() for a in state.outline.subplots]

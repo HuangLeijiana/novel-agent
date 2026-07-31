@@ -1,11 +1,9 @@
 """Reader Simulator Agent — simulates reader experience and emotional response."""
 
 import logging
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from ..llm.scheduler import ModelScheduler
 from ..models.bible import NovelBible
 from ..models.chapter import ChapterDraft
 from ..models.review import Issue

@@ -2,11 +2,10 @@
 
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 from pydantic import BaseModel
-
 
 # ============================================================
 # YAML
@@ -36,9 +35,9 @@ class YamlSerializer:
             )
 
     @staticmethod
-    def from_yaml(file_path: Path, model_class: Optional[type[BaseModel]] = None) -> Any:
+    def from_yaml(file_path: Path, model_class: type[BaseModel] | None = None) -> Any:
         """Deserialize a YAML file to a dict or Pydantic model."""
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
         if model_class is not None and data is not None:
             return model_class.model_validate(data)
@@ -107,7 +106,7 @@ class MarkdownSerializer:
     @staticmethod
     def load_chapter_markdown(file_path: Path) -> tuple[int, str, str]:
         """Load a chapter from a markdown file. Returns (chapter_number, title, content)."""
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             text = f.read()
         # Simple parsing: extract title from H1, return the rest as content
         lines = text.split("\n")
@@ -139,8 +138,8 @@ class DocxSerializer:
     ) -> None:
         """Save a chapter as a formatted .docx file."""
         from docx import Document
-        from docx.shared import Pt, Cm, RGBColor
         from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.shared import Cm, Pt
 
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -198,8 +197,8 @@ class DocxSerializer:
             chapters: List of (chapter_number, chapter_title, content) tuples
         """
         from docx import Document
-        from docx.shared import Pt, Cm
         from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.shared import Cm, Pt
 
         doc = Document()
 

@@ -1,11 +1,9 @@
 """Continuity Checker Agent — timeline, causality, and foreshadowing verification."""
 
 import logging
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from ..llm.scheduler import ModelScheduler
 from ..models.chapter import ChapterDraft
 from ..models.characters import CharacterRegistry
 from ..models.memory import MemoryState
@@ -33,7 +31,7 @@ class ContinuityCheckerAgent(BaseAgent):
     async def check_timeline(
         self,
         draft: ChapterDraft,
-        memory: Optional[MemoryState] = None,
+        memory: MemoryState | None = None,
     ) -> list[Issue]:
         """Check that timeline events are consistent and correctly ordered."""
         system = self.build_system_prompt(
@@ -74,7 +72,7 @@ class ContinuityCheckerAgent(BaseAgent):
         self,
         draft: ChapterDraft,
         characters: CharacterRegistry,
-        memory: Optional[MemoryState] = None,
+        memory: MemoryState | None = None,
     ) -> list[Issue]:
         """Check that characters behave consistently with their profiles and recent states."""
         system = self.build_system_prompt(
@@ -118,7 +116,7 @@ class ContinuityCheckerAgent(BaseAgent):
     async def check_causality(
         self,
         draft: ChapterDraft,
-        memory: Optional[MemoryState] = None,
+        memory: MemoryState | None = None,
     ) -> list[Issue]:
         """Check that events have proper cause-and-effect relationships."""
         system = self.build_system_prompt(
@@ -149,7 +147,7 @@ class ContinuityCheckerAgent(BaseAgent):
     async def check_foreshadowing(
         self,
         draft: ChapterDraft,
-        memory: Optional[MemoryState] = None,
+        memory: MemoryState | None = None,
     ) -> list[Issue]:
         """Check foreshadowing usage — what's being planted, advanced, or paid off."""
         system = self.build_system_prompt(

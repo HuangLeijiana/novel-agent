@@ -18,21 +18,17 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.config.settings import get_settings
+from src.agents.architect import ArchitectAgent
+from src.agents.character_manager import CharacterManagerAgent
 from src.llm.scheduler import ModelScheduler
 from src.models.bible import (
-    CoreConflict,
-    Faction,
     NarrativeRules,
     NovelBible,
     StyleContract,
-    Theme,
     WorldBuilding,
 )
-from src.models.characters import CharacterProfile, CharacterRegistry
+from src.models.characters import CharacterRegistry
 from src.models.project import ProjectConfig
-from src.agents.architect import ArchitectAgent
-from src.agents.character_manager import CharacterManagerAgent
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)

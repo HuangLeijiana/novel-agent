@@ -1,11 +1,9 @@
 """Refiner Agent — polishes chapter drafts based on review feedback."""
 
 import logging
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from ..llm.scheduler import ModelScheduler
 from ..models.bible import NovelBible
 from ..models.chapter import ChapterDraft, PolishedChapter
 from ..models.review import ReviewReport
@@ -41,7 +39,7 @@ class RefinerAgent(BaseAgent):
         draft: ChapterDraft,
         review: ReviewReport,
         bible: NovelBible,
-        human_feedback: Optional[str] = None,
+        human_feedback: str | None = None,
     ) -> PolishedChapter:
         """Polish a chapter draft based on review feedback.
 

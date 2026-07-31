@@ -5,7 +5,7 @@ from typing import Any
 
 from ..agents.orchestrator import OrchestratorAgent
 from ..llm.scheduler import ModelScheduler
-from ..models.common import HumanDecision, WorkflowPhase
+from ..models.common import WorkflowPhase
 from ..models.state import MainState
 
 logger = logging.getLogger(__name__)

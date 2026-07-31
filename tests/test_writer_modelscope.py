@@ -18,7 +18,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from src.config.settings import get_settings
+from src.agents.writer import ChapterContentOutput, FactExtractionOutput, WriterAgent
 from src.llm.scheduler import ModelScheduler
 from src.models.bible import (
     CoreConflict,
@@ -43,7 +43,6 @@ from src.models.outline import (
     Volume,
 )
 from src.models.project import ProjectConfig
-from src.agents.writer import WriterAgent, ChapterContentOutput, FactExtractionOutput
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -541,7 +540,7 @@ async def test_generate_chapter(writer, project_config, bible, characters, outli
     if content_len < 500:
         print("[WARN] Content is very short — Qwen3 may have truncated output")
     if content_len > 200:
-        print(f"[OK] Content has reasonable length")
+        print("[OK] Content has reasonable length")
 
     print("\n" + "=" * 70)
     print("CHAPTER GENERATION TEST PASSED")

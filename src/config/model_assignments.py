@@ -17,8 +17,6 @@ Format for all *_MODEL settings: "provider:model_name"
 If provider is omitted (just "model_name"), the default_provider is used.
 """
 
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 from .settings import PROVIDER_PRESETS, Settings, get_settings
@@ -33,7 +31,7 @@ class ModelAssignment(BaseModel):
         description="Provider: 'anthropic', 'openai', 'openrouter', 'ollama', 'modelscope', 'dashscope'",
     )
     primary_model: str = Field(..., description="Model ID, e.g. 'gpt-4o', 'claude-sonnet-4-20250514'")
-    fallback_model: Optional[str] = Field(
+    fallback_model: str | None = Field(
         default=None,
         description="Fallback model if primary fails",
     )
@@ -94,7 +92,7 @@ AGENT_CONFIGS: dict[str, dict] = {
 def _resolve_provider_model(
     agent_type: str,
     settings: Settings,
-) -> tuple[str, str, Optional[str]]:
+) -> tuple[str, str, str | None]:
     """Resolve (provider, primary_model, fallback_model) for an agent.
 
     Resolution order:
@@ -165,7 +163,7 @@ def _resolve_provider_model(
     return "openai", preset[tier], None
 
 
-def _parse_override(override: str, settings: Settings) -> tuple[str, str, Optional[str]]:
+def _parse_override(override: str, settings: Settings) -> tuple[str, str, str | None]:
     """Parse a 'provider:model' or 'model' override string."""
     if ":" in override:
         provider, model = override.split(":", 1)

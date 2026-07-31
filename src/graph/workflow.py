@@ -7,34 +7,33 @@ Builds a state machine with 9 phase nodes and conditional routing for:
 """
 
 import logging
-from typing import Optional
 
-from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, START, StateGraph
 
 from ..models.state import MainState
-from .nodes import (
-    project_init_node,
-    bible_construction_node,
-    master_outline_node,
-    chapter_planning_node,
-    chapter_writing_node,
-    quality_review_node,
-    polish_revision_node,
-    memory_update_node,
-    human_confirmation_node,
-)
 from .edges import (
-    review_decision,
-    next_chapter_or_done,
-    human_confirmation_decision,
     ROUTE_ACCEPT,
+    ROUTE_DONE,
+    ROUTE_NEXT,
+    ROUTE_RESTART_BIBLE,
     ROUTE_REVISE,
     ROUTE_REWRITE,
-    ROUTE_NEXT,
-    ROUTE_DONE,
     ROUTE_ROLLBACK,
-    ROUTE_RESTART_BIBLE,
+    human_confirmation_decision,
+    next_chapter_or_done,
+    review_decision,
+)
+from .nodes import (
+    bible_construction_node,
+    chapter_planning_node,
+    chapter_writing_node,
+    human_confirmation_node,
+    master_outline_node,
+    memory_update_node,
+    polish_revision_node,
+    project_init_node,
+    quality_review_node,
 )
 
 logger = logging.getLogger(__name__)
@@ -142,7 +141,7 @@ def build_workflow() -> StateGraph:
 # ============================================================
 
 
-async def build_async_workflow(db_path: Optional[str] = None):
+async def build_async_workflow(db_path: str | None = None):
     """Build workflow with async SQLite checkpointer for persistence.
 
     Args:

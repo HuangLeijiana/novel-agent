@@ -2,16 +2,15 @@
 
 import json
 from pathlib import Path
-from typing import Optional
 
-from ..models.project import ProjectConfig, ProjectMeta
-from ..models.bible import NovelBible, WorldBuilding, Faction, NarrativeRules, StyleContract, Theme, CoreConflict
-from ..models.characters import CharacterRegistry
-from ..models.outline import MasterOutline, ChapterPlan, Volume, TurningPoint
+from ..models.bible import CoreConflict, Faction, NarrativeRules, NovelBible, StyleContract, Theme, WorldBuilding
 from ..models.chapter import ChapterDraft, PolishedChapter
-from ..models.review import ReviewReport
+from ..models.characters import CharacterRegistry
 from ..models.memory import MemoryState
-from .serializers import YamlSerializer, MarkdownSerializer, DocxSerializer
+from ..models.outline import ChapterPlan, MasterOutline, TurningPoint, Volume
+from ..models.project import ProjectConfig, ProjectMeta
+from ..models.review import ReviewReport
+from .serializers import DocxSerializer, MarkdownSerializer, YamlSerializer
 
 
 class ProjectFileManager:
@@ -81,7 +80,7 @@ class ProjectFileManager:
         """Save project configuration."""
         YamlSerializer.to_yaml(config, self.root / "project.yaml")
 
-    def load_project_config(self) -> Optional[ProjectConfig]:
+    def load_project_config(self) -> ProjectConfig | None:
         """Load project configuration."""
         path = self.root / "project.yaml"
         if not path.exists():
@@ -92,7 +91,7 @@ class ProjectFileManager:
         """Save project metadata."""
         YamlSerializer.to_yaml(meta, self.root / "project_meta.yaml")
 
-    def load_project_meta(self) -> Optional[ProjectMeta]:
+    def load_project_meta(self) -> ProjectMeta | None:
         """Load project metadata."""
         path = self.root / "project_meta.yaml"
         if not path.exists():
@@ -115,7 +114,7 @@ class ProjectFileManager:
         # Also save the complete bible for easy loading
         YamlSerializer.to_yaml(bible, bible_dir / "bible_full.yaml")
 
-    def load_bible(self) -> Optional[NovelBible]:
+    def load_bible(self) -> NovelBible | None:
         """Load the complete Novel Bible from the full file."""
         path = self.root / "novel_bible" / "bible_full.yaml"
         if not path.exists():
@@ -148,7 +147,7 @@ class ProjectFileManager:
         """Save character registry."""
         YamlSerializer.to_yaml(characters, self.root / "novel_bible" / "characters.yaml")
 
-    def load_characters(self) -> Optional[CharacterRegistry]:
+    def load_characters(self) -> CharacterRegistry | None:
         """Load character registry."""
         path = self.root / "novel_bible" / "characters.yaml"
         if not path.exists():
@@ -163,7 +162,7 @@ class ProjectFileManager:
         """Save master outline."""
         YamlSerializer.to_yaml(outline, self.root / "outline" / "master_outline.yaml")
 
-    def load_master_outline(self) -> Optional[MasterOutline]:
+    def load_master_outline(self) -> MasterOutline | None:
         """Load master outline."""
         path = self.root / "outline" / "master_outline.yaml"
         if not path.exists():
@@ -183,7 +182,7 @@ class ProjectFileManager:
         filename = f"chapter_{plan.chapter_number:03d}.yaml"
         YamlSerializer.to_yaml(plan, self.root / "outline" / "chapters" / filename)
 
-    def load_chapter_plan(self, chapter_number: int) -> Optional[ChapterPlan]:
+    def load_chapter_plan(self, chapter_number: int) -> ChapterPlan | None:
         """Load a single chapter plan."""
         filename = f"chapter_{chapter_number:03d}.yaml"
         path = self.root / "outline" / "chapters" / filename
@@ -233,7 +232,7 @@ class ProjectFileManager:
         )
         return path
 
-    def load_chapter_markdown(self, chapter_number: int) -> Optional[str]:
+    def load_chapter_markdown(self, chapter_number: int) -> str | None:
         """Load a chapter's Markdown content."""
         filename = f"chapter_{chapter_number:03d}.md"
         path = self.root / "output" / "chapters" / filename
@@ -247,7 +246,7 @@ class ProjectFileManager:
         filename = f"chapter_{draft.chapter_number:03d}_draft.yaml"
         YamlSerializer.to_yaml(draft, self.root / "output" / "chapters" / filename)
 
-    def load_chapter_draft(self, chapter_number: int) -> Optional[ChapterDraft]:
+    def load_chapter_draft(self, chapter_number: int) -> ChapterDraft | None:
         """Load raw chapter draft."""
         filename = f"chapter_{chapter_number:03d}_draft.yaml"
         path = self.root / "output" / "chapters" / filename
@@ -264,7 +263,7 @@ class ProjectFileManager:
         filename = f"review_chapter_{report.chapter_number:03d}.yaml"
         YamlSerializer.to_yaml(report, self.root / "output" / "chapters" / filename)
 
-    def load_review_report(self, chapter_number: int) -> Optional[ReviewReport]:
+    def load_review_report(self, chapter_number: int) -> ReviewReport | None:
         """Load review report."""
         filename = f"review_chapter_{chapter_number:03d}.yaml"
         path = self.root / "output" / "chapters" / filename
@@ -287,7 +286,7 @@ class ProjectFileManager:
         # Save long-term events as JSONL for streaming/append
         self._save_long_term_events_jsonl(memory, mem_dir / "long_term_events.jsonl")
 
-    def load_memory(self) -> Optional[MemoryState]:
+    def load_memory(self) -> MemoryState | None:
         """Load complete memory state."""
         mem_dir = self.root / "memory"
         if not (mem_dir / "short_term.yaml").exists():
@@ -314,7 +313,7 @@ class ProjectFileManager:
         topic_dir = self.root / "topic_research"
         YamlSerializer.to_yaml(outlines, topic_dir / "mini_arc_outlines.yaml")
 
-    def load_mini_arc_outlines(self) -> Optional[dict]:
+    def load_mini_arc_outlines(self) -> dict | None:
         """Load saved mini-arc outlines."""
         path = self.root / "topic_research" / "mini_arc_outlines.yaml"
         if not path.exists():

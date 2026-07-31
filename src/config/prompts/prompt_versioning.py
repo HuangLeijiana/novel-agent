@@ -19,7 +19,6 @@ import logging
 from datetime import datetime
 from difflib import unified_diff
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +36,7 @@ class PromptVersionManager:
         mgr.rollback("writer/generate_chapter_system.j2", version=2)
     """
 
-    def __init__(self, template_dir: Optional[Path] = None):
+    def __init__(self, template_dir: Path | None = None):
         from .prompt_loader import _TEMPLATE_DIR
 
         self._template_dir = template_dir or _TEMPLATE_DIR
@@ -127,7 +126,7 @@ class PromptVersionManager:
         """
         return self._load_history(template_path)
 
-    def get_version(self, template_path: str, version: int) -> Optional[str]:
+    def get_version(self, template_path: str, version: int) -> str | None:
         """Retrieve the content of a specific version."""
         snapshot_path = self._get_snapshot_path(template_path, version)
         if snapshot_path.exists():
@@ -260,8 +259,8 @@ class PromptVersionManager:
     @staticmethod
     def _summarize_diff(diff_lines: list[str]) -> str:
         """Create a human-readable summary of a diff."""
-        added = sum(1 for l in diff_lines if l.startswith("+") and not l.startswith("+++"))
-        removed = sum(1 for l in diff_lines if l.startswith("-") and not l.startswith("---"))
+        added = sum(1 for ln in diff_lines if ln.startswith("+") and not ln.startswith("+++"))
+        removed = sum(1 for ln in diff_lines if ln.startswith("-") and not ln.startswith("---"))
         if added == 0 and removed == 0:
             return "no changes"
         parts = []
@@ -273,7 +272,7 @@ class PromptVersionManager:
 
 
 # Module-level singleton
-_version_manager: Optional[PromptVersionManager] = None
+_version_manager: PromptVersionManager | None = None
 
 
 def get_version_manager() -> PromptVersionManager:

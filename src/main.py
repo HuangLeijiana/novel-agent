@@ -1,7 +1,6 @@
 """Novel Agent — Entry point."""
 
 import logging
-import sys
 
 import uvicorn
 
@@ -21,7 +20,7 @@ def main():
     )
 
     logger = logging.getLogger(__name__)
-    logger.info(f"Starting Novel Agent v0.1.0")
+    logger.info("Starting Novel Agent v0.1.0")
     logger.info(f"Workspace: {settings.workspace_path}")
 
     # Check API key availability (provider-agnostic)

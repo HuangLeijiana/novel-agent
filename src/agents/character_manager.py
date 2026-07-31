@@ -1,17 +1,14 @@
 """Character Manager Agent — creates and maintains character profiles."""
 
 import logging
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from ..llm.scheduler import ModelScheduler
-from ..models.bible import NovelBible, Theme
+from ..models.bible import NovelBible
 from ..models.characters import (
     ArcBeat,
     CharacterProfile,
     CharacterRegistry,
-    CharacterState,
     Relationship,
 )
 from ..models.project import ProjectConfig

@@ -6,7 +6,8 @@ prompts (for externalized, editable prompt management).
 
 import logging
 from abc import ABC
-from typing import Any, AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -28,7 +29,7 @@ class BaseAgent(ABC):
 
     agent_type: str = "base"
 
-    def __init__(self, scheduler: ModelScheduler, prompt_loader: Optional[PromptLoader] = None):
+    def __init__(self, scheduler: ModelScheduler, prompt_loader: PromptLoader | None = None):
         self.scheduler = scheduler
         self._prompt_loader = prompt_loader
 
@@ -40,8 +41,8 @@ class BaseAgent(ABC):
         self,
         system_prompt: str,
         user_prompt: str,
-        temperature_override: Optional[float] = None,
-        max_tokens_override: Optional[int] = None,
+        temperature_override: float | None = None,
+        max_tokens_override: int | None = None,
     ) -> LLMResponse:
         """Generate a text response from the assigned LLM.
 
@@ -67,8 +68,8 @@ class BaseAgent(ABC):
         system_prompt: str,
         user_prompt: str,
         response_model: type[BaseModel],
-        temperature_override: Optional[float] = None,
-        max_tokens_override: Optional[int] = None,
+        temperature_override: float | None = None,
+        max_tokens_override: int | None = None,
     ) -> BaseModel:
         """Generate a structured response and parse it into a Pydantic model.
 
@@ -95,8 +96,8 @@ class BaseAgent(ABC):
         self,
         system_prompt: str,
         user_prompt: str,
-        temperature_override: Optional[float] = None,
-        max_tokens_override: Optional[int] = None,
+        temperature_override: float | None = None,
+        max_tokens_override: int | None = None,
     ) -> AsyncGenerator[str, None]:
         """Stream a text response from the assigned LLM, yielding tokens.
 
@@ -195,11 +196,11 @@ class BaseAgent(ABC):
 
     @staticmethod
     def build_context_block(
-        project_config: Optional[dict] = None,
-        bible: Optional[dict] = None,
-        characters: Optional[dict] = None,
-        outline: Optional[dict] = None,
-        memory: Optional[dict] = None,
+        project_config: dict | None = None,
+        bible: dict | None = None,
+        characters: dict | None = None,
+        outline: dict | None = None,
+        memory: dict | None = None,
     ) -> str:
         """Build a context block string from available artifacts.
 

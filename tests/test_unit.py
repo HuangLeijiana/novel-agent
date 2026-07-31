@@ -14,7 +14,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from src.llm.scheduler import _try_parse_json
 
-
 # ═══════════════════════════════════════════════════════════════════════
 # JSON Repair (_try_parse_json)
 # ═══════════════════════════════════════════════════════════════════════
@@ -319,8 +318,8 @@ class TestPromptBuilding:
         assert "JSON" in prompt or "content" in prompt
 
     def test_format_scenes(self):
-        from src.llm.scheduler import ModelScheduler
         from src.agents.writer import WriterAgent
+        from src.llm.scheduler import ModelScheduler
         from src.models.outline import Scene
 
         agent = WriterAgent(ModelScheduler())
@@ -339,8 +338,8 @@ class TestPromptBuilding:
         assert "矿区" in result
 
     def test_format_emotional_curve(self):
-        from src.llm.scheduler import ModelScheduler
         from src.agents.writer import WriterAgent
+        from src.llm.scheduler import ModelScheduler
         from src.models.outline import EmotionalBeat
 
         agent = WriterAgent(ModelScheduler())
@@ -381,7 +380,7 @@ class TestModelAssignments:
         assert "continuity_checker" in BUDGET_AGENTS
 
     def test_agent_configs_complete(self):
-        from src.config.model_assignments import AGENT_CONFIGS, QUALITY_AGENTS, BUDGET_AGENTS, ORCHESTRATOR_AGENTS
+        from src.config.model_assignments import AGENT_CONFIGS, BUDGET_AGENTS, ORCHESTRATOR_AGENTS, QUALITY_AGENTS
 
         all_agents = QUALITY_AGENTS | BUDGET_AGENTS | ORCHESTRATOR_AGENTS
         for agent in all_agents:
@@ -395,9 +394,14 @@ class TestModelAssignments:
         assert AGENT_CONFIGS["writer"]["max_tokens"] >= 16384
 
     def test_all_agents_in_override_map(self):
-        from src.config.model_assignments import QUALITY_AGENTS, BUDGET_AGENTS, ORCHESTRATOR_AGENTS
         import inspect
-        from src.config.model_assignments import _resolve_provider_model
+
+        from src.config.model_assignments import (
+            BUDGET_AGENTS,
+            ORCHESTRATOR_AGENTS,
+            QUALITY_AGENTS,
+            _resolve_provider_model,
+        )
 
         # Verify the function has entries for all agent types
         all_agents = sorted(QUALITY_AGENTS | BUDGET_AGENTS | ORCHESTRATOR_AGENTS)
@@ -416,7 +420,7 @@ class TestMasterOutlineValidation:
 
     def test_string_volumes_coerced(self):
         """Qwen3 returns volumes as strings — should be coerced."""
-        from src.models.outline import Volume, PlotArc, TurningPoint
+        from src.models.outline import PlotArc, TurningPoint, Volume
 
         outline = self.MasterOutline(
             title="测试",
@@ -431,7 +435,7 @@ class TestMasterOutlineValidation:
         assert outline.volumes[0].number == 1
 
     def test_minimal_outline_valid(self):
-        from src.models.outline import Volume, PlotArc, TurningPoint
+        from src.models.outline import PlotArc, TurningPoint, Volume
 
         outline = self.MasterOutline(
             title="测试",
@@ -499,6 +503,7 @@ class TestParseOverride:
 class TestFileManager:
     def test_root_path_construction(self):
         from pathlib import Path
+
         from src.storage.file_manager import ProjectFileManager
 
         fm = ProjectFileManager("/tmp/workspace", "proj_001")
@@ -508,6 +513,7 @@ class TestFileManager:
 
     def test_path_with_windows_style(self):
         from pathlib import Path
+
         from src.storage.file_manager import ProjectFileManager
 
         fm = ProjectFileManager("D:\\novels", "test-project")
@@ -515,6 +521,7 @@ class TestFileManager:
 
     def test_exists_returns_false_for_new_project(self):
         import tempfile
+
         from src.storage.file_manager import ProjectFileManager
 
         with tempfile.TemporaryDirectory() as td:
@@ -523,8 +530,9 @@ class TestFileManager:
 
     def test_initialize_creates_directories(self):
         import tempfile
-        from src.storage.file_manager import ProjectFileManager
+
         from src.models.project import ProjectConfig
+        from src.storage.file_manager import ProjectFileManager
 
         with tempfile.TemporaryDirectory() as td:
             fm = ProjectFileManager(td, "init_test")
@@ -567,8 +575,8 @@ class TestSchedulerRouting:
         assert assignment.agent_type in ("orchestrator", "writer", "architect")
 
     def test_all_registered_agents_have_assignments(self):
-        from src.llm.scheduler import ModelScheduler
         from src.config.model_assignments import AGENT_CONFIGS
+        from src.llm.scheduler import ModelScheduler
 
         s = ModelScheduler()
         for agent_type in AGENT_CONFIGS:
@@ -620,7 +628,7 @@ class TestCharacterModels:
         assert char.role == "protagonist"
 
     def test_character_registry(self):
-        from src.models.characters import CharacterRegistry, CharacterProfile
+        from src.models.characters import CharacterProfile, CharacterRegistry
 
         reg = CharacterRegistry(
             characters={
@@ -656,13 +664,13 @@ class TestBibleModels:
 
     def test_novel_bible_minimal(self):
         from src.models.bible import (
-            NovelBible,
-            WorldBuilding,
+            CoreConflict,
             Faction,
             NarrativeRules,
+            NovelBible,
             StyleContract,
             Theme,
-            CoreConflict,
+            WorldBuilding,
         )
 
         bible = NovelBible(

@@ -9,11 +9,9 @@ Covers Steps 1-4 of the commercial writing pipeline:
 """
 
 import logging
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-from ..llm.scheduler import ModelScheduler
 from ..models.topic import (
     BenchmarkReport,
     BenchmarkSkeleton,
@@ -141,7 +139,7 @@ class TopicScoutAgent(BaseAgent):
     # Step 1A: 飞卢真实扫榜
     # ================================================================
 
-    async def scan_platform(self, platform: str, page_content: Optional[str] = None) -> ScanReport:
+    async def scan_platform(self, platform: str, page_content: str | None = None) -> ScanReport:
         """Scan a real platform rankings page and extract structured data.
 
         Tries structured generation first, falls back to plain-text generation
@@ -265,7 +263,7 @@ class TopicScoutAgent(BaseAgent):
         except Exception as e2:
             logger.error(f"{platform} text fallback also failed: {e2}")
 
-        return ScanReport(platform=platform, scan_failed=True, summary=f"本次扫榜失败：无法从页面提取书名")
+        return ScanReport(platform=platform, scan_failed=True, summary="本次扫榜失败：无法从页面提取书名")
 
     @staticmethod
     def _parse_text_scan_entries(text: str) -> list[ScanEntry]:
@@ -273,7 +271,6 @@ class TopicScoutAgent(BaseAgent):
 
         Expected format: #N | title | genre | title_appeal | one_liner | golden_finger | opening_pressure | pleasure_loop
         """
-        import re
 
         entries = []
         for line in text.split("\n"):
@@ -302,11 +299,11 @@ class TopicScoutAgent(BaseAgent):
             )
         return entries
 
-    async def scan_feilu(self, page_content: Optional[str] = None) -> ScanReport:
+    async def scan_feilu(self, page_content: str | None = None) -> ScanReport:
         """Step 1A: Scan 飞卢小说 real rankings."""
         return await self.scan_platform("飞卢", page_content)
 
-    async def scan_fanqie(self, page_content: Optional[str] = None) -> ScanReport:
+    async def scan_fanqie(self, page_content: str | None = None) -> ScanReport:
         """Step 1B: Scan 番茄小说 real rankings.
 
         For Fanqie, the scraper already produces clean structured text.
@@ -355,7 +352,7 @@ class TopicScoutAgent(BaseAgent):
 
     async def _enrich_fanqie_with_llm(
         self, page_content: str, direct_entries: list[ScanEntry]
-    ) -> tuple[Optional[list[ScanEntry]], str]:
+    ) -> tuple[list[ScanEntry] | None, str]:
         """Use LLM to enrich Fanqie entries with genre analysis and trend summary.
 
         Uses plain-text generation (not structured output) for reliability
@@ -491,7 +488,7 @@ class TopicScoutAgent(BaseAgent):
         return entries
 
     @staticmethod
-    def _parse_one_fanqie_block(lines: list[str]) -> Optional[ScanEntry]:
+    def _parse_one_fanqie_block(lines: list[str]) -> ScanEntry | None:
         """Parse a single Fanqie book entry block into a ScanEntry."""
         import re
 
@@ -537,9 +534,7 @@ class TopicScoutAgent(BaseAgent):
     # Step 1C: 双榜交叉分析
     # ================================================================
 
-    async def cross_platform_analysis(
-        self, feilu: Optional[ScanReport], fanqie: Optional[ScanReport]
-    ) -> CrossPlatformReport:
+    async def cross_platform_analysis(self, feilu: ScanReport | None, fanqie: ScanReport | None) -> CrossPlatformReport:
         """Step 1C: Cross-platform comparison — narrow down topic directions.
 
         Works with whatever platform data is available. If only one platform
@@ -667,8 +662,8 @@ class TopicScoutAgent(BaseAgent):
     async def analyze_benchmarks(
         self,
         directions: list[str],
-        feilu_scan: Optional[ScanReport] = None,
-        fanqie_scan: Optional[ScanReport] = None,
+        feilu_scan: ScanReport | None = None,
+        fanqie_scan: ScanReport | None = None,
     ) -> BenchmarkReport:
         """Step 2: Analyze benchmark book skeletons.
 
@@ -790,7 +785,6 @@ class TopicScoutAgent(BaseAgent):
 
     async def _generate_topic_batch(self, system_prompt: str, user_prompt: str, batch_num: int) -> list[CandidateTopic]:
         """Generate one batch of topics. Falls back to text parsing if structured fails."""
-        import re
 
         # Attempt 1: structured generation
         try:
@@ -1036,7 +1030,7 @@ class TopicScoutAgent(BaseAgent):
                     final_title=result.final_title,
                     final_synopsis=result.final_synopsis,
                 )
-            logger.warning(f"Title structured: empty title/synopsis → falling back to text")
+            logger.warning("Title structured: empty title/synopsis → falling back to text")
         except Exception as e:
             logger.warning(f"Title structured generation failed: {e} → falling back to text")
 
@@ -1060,7 +1054,7 @@ class TopicScoutAgent(BaseAgent):
 
             # Fallback: use first line as title if no match
             if not final_title:
-                lines = [l.strip() for l in text.split("\n") if l.strip() and not l.startswith("#")]
+                lines = [ln.strip() for ln in text.split("\n") if ln.strip() and not ln.startswith("#")]
                 if lines:
                     # Clean up common artifacts
                     first = re.sub(r"^[《「]|[》」]$", "", lines[0]).strip()
@@ -1427,7 +1421,6 @@ def _build_deterministic_mini_arc(
     """
     golden = topic.golden_finger or "金手指"
     conflict = topic.chapter1_conflict or "开篇冲突"
-    direction = topic.first_event_direction or f"{genre_name}题材的首个小事件"
     pleasure = topic.first_pleasure_wave or "打脸逆袭"
     title = title_report.final_title or genre_name
 
@@ -1436,7 +1429,7 @@ def _build_deterministic_mini_arc(
             "goal": f"开局建立冲突：{conflict}",
             "conflict": f"主角面临{conflict}的困境",
             "pleasure_point": "开篇压力制造悬念，读者期待反转",
-            "new_info": f"引入世界观基本设定，展示主角处境",
+            "new_info": "引入世界观基本设定，展示主角处境",
             "character_change": "主角从被动承受转向主动应对",
             "foreshadowing": f"暗示{golden}的存在",
             "ending_hook": f"主角发现{golden}的线索，读者期待下一章",
@@ -1461,7 +1454,7 @@ def _build_deterministic_mini_arc(
         },
         {
             "goal": "主角遭遇第一次重大挫折",
-            "conflict": f"对手利用规则或势力压制主角",
+            "conflict": "对手利用规则或势力压制主角",
             "pleasure_point": "主角在逆境中发现金手指的新用法",
             "new_info": "揭示对手的背景和动机",
             "character_change": "主角认识到需要变强",
@@ -1506,7 +1499,7 @@ def _build_deterministic_mini_arc(
         },
         {
             "goal": "决战时刻",
-            "conflict": f"主角用全力与最终对手决战",
+            "conflict": "主角用全力与最终对手决战",
             "pleasure_point": "最高潮的爽点释放",
             "new_info": "揭示事件的全部真相",
             "character_change": "主角完成阶段性成长",

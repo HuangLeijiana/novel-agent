@@ -16,9 +16,7 @@ with pass/fail and flagged segments for human review.
 """
 
 import logging
-import re
 from dataclasses import dataclass, field
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +206,7 @@ class ContentSafetyChecker:
 
         return result
 
-    def check_with_correction(self, text: str, chapter_number: int = 0) -> tuple[SafetyResult, Optional[str]]:
+    def check_with_correction(self, text: str, chapter_number: int = 0) -> tuple[SafetyResult, str | None]:
         """Check content and optionally suggest corrected text.
 
         For warning-level flags, replaces flagged terms with [内容已编辑]

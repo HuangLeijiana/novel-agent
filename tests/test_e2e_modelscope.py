@@ -19,17 +19,15 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from src.config.settings import get_settings
-from src.llm.scheduler import ModelScheduler
-from src.models.bible import NarrativeRules, NovelBible
-from src.models.characters import CharacterRegistry
-from src.models.chapter import ChapterDraft
-from src.models.outline import ChapterPlan, MasterOutline
-from src.models.project import ProjectConfig
 from src.agents.architect import ArchitectAgent
 from src.agents.character_manager import CharacterManagerAgent
 from src.agents.plot_planner import PlotPlannerAgent
 from src.agents.writer import WriterAgent
+from src.llm.scheduler import ModelScheduler
+from src.models.bible import NarrativeRules, NovelBible
+from src.models.chapter import ChapterDraft
+from src.models.outline import ChapterPlan, MasterOutline
+from src.models.project import ProjectConfig
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -417,7 +415,7 @@ async def test_full_pipeline(scheduler, config):
         print(f"| Themes: {len(themes)}, Conflicts: {len(conflicts)}")
 
         pleasure_model, constraints = await architect.design_pleasure_points(config, world, themes)
-        print(f"| Pleasure model: [OK]")
+        print("| Pleasure model: [OK]")
 
         bible = NovelBible(
             world=world,
@@ -526,7 +524,7 @@ async def test_full_pipeline(scheduler, config):
     total = time.time() - pipeline_start
     print("\n" + "=" * 70)
     print(f"=  PIPELINE COMPLETE in {total:.0f}s ({total / 60:.1f}m)")
-    print(f"=  Phases: 2[OK] 3[OK] 4[OK] 5[OK]")
+    print("=  Phases: 2[OK] 3[OK] 4[OK] 5[OK]")
     print(f"=  Output: Chapter 1 -- '{draft.title}' ({draft.word_count} chars)")
     print(f"=  Facts: {len(draft.new_facts)} | State changes: {len(draft.character_state_changes)}")
     if errors:

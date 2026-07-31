@@ -1,19 +1,18 @@
 """FastAPI REST routes for novel agent workflow control and artifact access."""
 
 import asyncio
+import json
 import logging
 import re
 import uuid
-from typing import Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from ..models.common import HumanDecision
 from ..models.project import ProjectConfig
 from ..models.state import MainState
-from ..graph.workflow import build_workflow
 from .dependencies import get_file_manager, get_scheduler
 from .websocket import ws_manager
 
@@ -57,7 +56,7 @@ class ProjectResponse(BaseModel):
     """Project summary in list/detail views."""
 
     project_id: str
-    title: Optional[str] = None
+    title: str | None = None
     status: str
     current_phase: str
     current_chapter: int
@@ -85,14 +84,14 @@ class HumanDecisionRequest(BaseModel):
     """
 
     decision: str = Field(..., description="accept / revise / rewrite / rollback")
-    feedback: Optional[str] = Field(default=None, description="Human feedback text (free-form)")
-    rollback_target: Optional[str] = Field(default=None, description="For rollback: 'chapter_plan' or 'bible'")
+    feedback: str | None = Field(default=None, description="Human feedback text (free-form)")
+    rollback_target: str | None = Field(default=None, description="For rollback: 'chapter_plan' or 'bible'")
     # Structured feedback (evaluation report pre-launch requirement #1)
-    sentiment: Optional[str] = Field(
+    sentiment: str | None = Field(
         default=None,
         description="Feedback sentiment: 'thumbs_up' or 'thumbs_down'",
     )
-    reason_tags: Optional[list[str]] = Field(
+    reason_tags: list[str] | None = Field(
         default=None,
         description="Reason tags for negative feedback: not_meeting_expectations, character_broken, plot_boring, ai_flavor_heavy, pacing_issue, dialogue_issue, worldbuilding_inconsistent, other",
     )
@@ -272,14 +271,14 @@ class NextPhaseRequest(BaseModel):
     """Request to confirm current phase and proceed."""
 
     phase: str = Field(..., description="Phase being confirmed")
-    inspiration: Optional[str] = Field(default=None, description="User inspiration for next phase")
-    edits: Optional[dict] = Field(default=None, description="User edits to current phase output")
+    inspiration: str | None = Field(default=None, description="User inspiration for next phase")
+    edits: dict | None = Field(default=None, description="User edits to current phase output")
 
 
 class PhaseConfirmationRequest(BaseModel):
     """Request to confirm phase and provide input."""
 
-    inspiration: Optional[str] = Field(default=None)
+    inspiration: str | None = Field(default=None)
 
 
 @router.post("/projects/{project_id}/start")
@@ -408,7 +407,7 @@ async def generate_synopsis_for_candidate(project_id: str, req: GenerateSynopsis
 
         # Fallback: if no label found, use first line as title, rest as synopsis
         if not title_match and not synopsis_match:
-            lines = [l.strip() for l in content.split("\n") if l.strip()]
+            lines = [ln.strip() for ln in content.split("\n") if ln.strip()]
             if len(lines) >= 2:
                 title = lines[0]
                 synopsis = " ".join(lines[1:])
@@ -499,8 +498,8 @@ async def ai_generate_titles(project_id: str, req: AiTitlesRequest):
 class SubmitScanRequest(BaseModel):
     """Submit platform HTML content for scanning."""
 
-    feilu_html: Optional[str] = Field(default=None, description="飞卢榜单页面HTML/文本")
-    fanqie_html: Optional[str] = Field(default=None, description="番茄榜单页面HTML/文本")
+    feilu_html: str | None = Field(default=None, description="飞卢榜单页面HTML/文本")
+    fanqie_html: str | None = Field(default=None, description="番茄榜单页面HTML/文本")
 
 
 @router.post("/projects/{project_id}/submit-scan")
@@ -671,16 +670,13 @@ async def retry_phase(project_id: str, phase: str, req: PhaseConfirmationRequest
 async def _run_phased_workflow(project_id: str):
     """Execute workflow phases sequentially with human confirmation between each."""
     from .phase_executor import (
-        PHASE_EXECUTORS,
-        PHASE_TAB_MAP,
-        PHASE_LABELS,
-        get_phase_data,
         execute_phase_bible,
         execute_phase_characters,
+        execute_phase_mini_arc,
         execute_phase_outline,
         execute_phase_platform_scan,
         execute_phase_topic_selection,
-        execute_phase_mini_arc,
+        get_phase_data,
     )
 
     proj = _active_projects.get(project_id)
@@ -801,10 +797,6 @@ async def _run_phased_workflow(project_id: str):
         # === Phase 4: Chapter Loop ===
         from .phase_executor import (
             execute_phase_chapter_planning,
-            execute_phase_chapter_writing,
-            execute_phase_review,
-            execute_phase_polish,
-            execute_phase_memory,
         )
 
         total = max(state.outline.chapter_count if state.outline else 0, state.total_chapters, 3)
@@ -930,7 +922,7 @@ async def _run_single_phase(
             )
             try:
                 await asyncio.wait_for(heartbeat_stop.wait(), timeout=3)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
 
     heartbeat_task = asyncio.create_task(_heartbeat())
@@ -962,21 +954,22 @@ async def _wait_for_confirmation(project_id: str, phase: str) -> bool:
     if not proj:
         return False
 
-    label = PHASE_LABELS.get(phase, phase)
+    PHASE_LABELS.get(phase, phase)
     await ws_manager.broadcast_phase_blocked(project_id, phase)
 
     proj["phase_event"].clear()
     try:
         await asyncio.wait_for(proj["phase_event"].wait(), timeout=3600)
         return True
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning(f"Phase confirmation timeout for {project_id}")
         return False
 
 
 def _get_chapter_phase(fm, ch: int) -> int:
     """Get the completion phase of a chapter (0-5). Persisted to disk."""
-    import os, json
+    import json
+    import os
 
     phase_file = os.path.join(fm.root, "output", "chapters", f"chapter_{ch:03d}_phase.json")
     try:
@@ -999,7 +992,8 @@ def _get_chapter_phase(fm, ch: int) -> int:
 
 def _set_chapter_phase(fm, ch: int, phase: int):
     """Save chapter completion phase to disk."""
-    import os, json
+    import json
+    import os
 
     phase_dir = os.path.join(fm.root, "output", "chapters")
     os.makedirs(phase_dir, exist_ok=True)
@@ -1046,7 +1040,7 @@ async def submit_human_decision(project_id: str, req: HumanDecisionRequest):
         state.rollback_target = req.rollback_target
 
     # Record structured feedback for data flywheel
-    from ..models.feedback import FeedbackEntry, FeedbackSentiment, FeedbackReasonTag
+    from ..models.feedback import FeedbackEntry, FeedbackReasonTag, FeedbackSentiment
 
     sentiment = FeedbackSentiment.THUMBS_UP
     if req.sentiment == "thumbs_down":
@@ -1213,7 +1207,7 @@ class EditorChatRequest(BaseModel):
 
     message: str = Field(..., description="User message or instruction")
     mode: str = Field(default="chat", description="Mode: chat, analyze, polish, rewrite")
-    context: Optional[str] = Field(default=None, description="Current text content for context")
+    context: str | None = Field(default=None, description="Current text content for context")
 
 
 @router.post("/projects/{project_id}/editor/upload")
@@ -1294,7 +1288,8 @@ async def editor_list_files(project_id: str):
 @router.delete("/projects/{project_id}/chapters/{chapter_number}")
 async def delete_chapter(project_id: str, chapter_number: int):
     """Delete a chapter and all its artifacts."""
-    import os, glob
+    import glob
+    import os
 
     fm = get_file_manager(project_id)
     deleted = []
@@ -1381,7 +1376,8 @@ async def edit_section(project_id: str, req: EditSectionRequest):
 
 def _invalidate_downstream(fm, artifacts: list):
     """Delete downstream artifacts so they get regenerated from updated content."""
-    import os, glob
+    import glob
+    import os
 
     for art in artifacts:
         try:
@@ -1506,7 +1502,7 @@ def _load_feedback(fm) -> list:
     if not os.path.exists(feedback_path):
         return []
     try:
-        with open(feedback_path, "r", encoding="utf-8") as f:
+        with open(feedback_path, encoding="utf-8") as f:
             data = json.load(f)
         from ..models.feedback import FeedbackEntry
 

@@ -18,13 +18,12 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from src.config.settings import get_settings
+from src.agents.plot_planner import PlotPlannerAgent
 from src.llm.scheduler import ModelScheduler
 from src.models.bible import CoreConflict, Faction, NarrativeRules, NovelBible, StyleContract, Theme, WorldBuilding
 from src.models.characters import CharacterProfile, CharacterRegistry
 from src.models.outline import MasterOutline
 from src.models.project import ProjectConfig
-from src.agents.plot_planner import PlotPlannerAgent
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")

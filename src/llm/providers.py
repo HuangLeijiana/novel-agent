@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
 
 from pydantic import BaseModel, ValidationError
 
@@ -247,7 +247,7 @@ class AnthropicProvider(BaseLLMProvider):
         model: str,
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        response_format: Optional[type[BaseModel]] = None,
+        response_format: type[BaseModel] | None = None,
     ) -> LLMResponse:
         sys_prompt = system_prompt
         if response_format is not None:
@@ -327,7 +327,7 @@ class OpenAIProvider(BaseLLMProvider):
 
     provider_name = "openai"
 
-    def __init__(self, api_key: str, base_url: Optional[str] = None):
+    def __init__(self, api_key: str, base_url: str | None = None):
         try:
             from openai import AsyncOpenAI
         except ImportError:
@@ -365,7 +365,7 @@ class OpenAIProvider(BaseLLMProvider):
         model: str,
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        response_format: Optional[type[BaseModel]] = None,
+        response_format: type[BaseModel] | None = None,
     ) -> LLMResponse:
         sys_prompt = system_prompt
         use_json_mode = False  # Whether to use API-level response_format

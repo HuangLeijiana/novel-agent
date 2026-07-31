@@ -1,7 +1,7 @@
 """LLM client abstraction — unified interface for multiple providers."""
 
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
 
 from pydantic import BaseModel, Field
 
@@ -30,7 +30,7 @@ class BaseLLMProvider(ABC):
         model: str,
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        response_format: Optional[type[BaseModel]] = None,
+        response_format: type[BaseModel] | None = None,
     ) -> LLMResponse:
         """Generate a response from the LLM.
 

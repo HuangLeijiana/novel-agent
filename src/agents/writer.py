@@ -1,11 +1,10 @@
 """Writer Agent — generates chapter drafts with full context awareness."""
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from ..llm.scheduler import ModelScheduler
 from ..models.bible import NovelBible
 from ..models.chapter import ChapterDraft, Fact, StateChange
 from ..models.characters import CharacterRegistry
@@ -117,8 +116,8 @@ class WriterAgent(BaseAgent):
         bible: NovelBible,
         characters: CharacterRegistry,
         outline: MasterOutline,
-        memory: Optional[MemoryState] = None,
-        revision_feedback: Optional[str] = None,
+        memory: MemoryState | None = None,
+        revision_feedback: str | None = None,
     ) -> ChapterDraft:
         """Generate a complete chapter draft.
 
@@ -327,7 +326,7 @@ class WriterAgent(BaseAgent):
         bible: NovelBible,
         characters: CharacterRegistry,
         outline: MasterOutline,
-        memory: Optional[MemoryState] = None,
+        memory: MemoryState | None = None,
     ) -> str:
         """Build the comprehensive context block for the writer."""
         ctx = self.build_context_block(

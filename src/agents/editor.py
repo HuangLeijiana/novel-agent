@@ -1,11 +1,9 @@
 """Editor Agent — quality review across multiple dimensions."""
 
 import logging
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from ..llm.scheduler import ModelScheduler
 from ..models.bible import NovelBible
 from ..models.chapter import ChapterDraft
 from ..models.characters import CharacterRegistry
@@ -70,7 +68,7 @@ class EditorAgent(BaseAgent):
         chapter_plan: ChapterPlan,
         bible: NovelBible,
         characters: CharacterRegistry,
-        memory: Optional[MemoryState] = None,
+        memory: MemoryState | None = None,
     ) -> ReviewReport:
         """Run all quality checks and produce a review report."""
         logger.info(f"Reviewing chapter {draft.chapter_number}...")
@@ -163,7 +161,7 @@ class EditorAgent(BaseAgent):
         draft: ChapterDraft,
         bible: NovelBible,
         characters: CharacterRegistry,
-        memory: Optional[MemoryState] = None,
+        memory: MemoryState | None = None,
     ) -> list[Issue]:
         """Check world setting and character behavior consistency."""
         system = self.build_system_prompt(

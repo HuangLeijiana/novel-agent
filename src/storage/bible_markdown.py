@@ -22,12 +22,10 @@ exactly one file. Agents load only the files they need for their task.
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from ..models.bible import (
     CoreConflict,
     Faction,
-    NarrativeRules,
     NovelBible,
     StyleContract,
     Theme,
@@ -79,7 +77,7 @@ class BibleMarkdownStore:
     def save_bible(
         self,
         bible: NovelBible,
-        characters: Optional[CharacterRegistry] = None,
+        characters: CharacterRegistry | None = None,
     ) -> None:
         """Save all bible components as modular Markdown files."""
         self._save_world(bible.world)
@@ -95,7 +93,7 @@ class BibleMarkdownStore:
         """Save world building as Markdown."""
         lines = [
             "---",
-            f'framework_version: "1.0.0"',
+            'framework_version: "1.0.0"',
             f'generated_at: "{datetime.now().isoformat()}"',
             "category: world-building",
             "---",
@@ -154,7 +152,7 @@ class BibleMarkdownStore:
         """Save factions as Markdown."""
         lines = [
             "---",
-            f'framework_version: "1.0.0"',
+            'framework_version: "1.0.0"',
             f'generated_at: "{datetime.now().isoformat()}"',
             "category: factions",
             "---",
@@ -187,15 +185,15 @@ class BibleMarkdownStore:
         """Save style contract as Markdown."""
         lines = [
             "---",
-            f'framework_version: "1.0.0"',
+            'framework_version: "1.0.0"',
             f'generated_at: "{datetime.now().isoformat()}"',
             "category: writing-style",
             "---",
             "",
             "# 文风契约",
             "",
-            f"| 参数 | 值 |",
-            f"|------|-----|",
+            "| 参数 | 值 |",
+            "|------|-----|",
             f"| 语调 | {style.tone} |",
             f"| 节奏偏好 | {style.pacing_preference} |",
             f"| 句式风格 | {style.sentence_style} |",
@@ -225,7 +223,7 @@ class BibleMarkdownStore:
         """Save themes and conflicts as Markdown."""
         lines = [
             "---",
-            f'framework_version: "1.0.0"',
+            'framework_version: "1.0.0"',
             f'generated_at: "{datetime.now().isoformat()}"',
             "category: themes-and-conflicts",
             "---",
@@ -263,7 +261,7 @@ class BibleMarkdownStore:
         """Save pleasure point model as Markdown."""
         lines = [
             "---",
-            f'framework_version: "1.0.0"',
+            'framework_version: "1.0.0"',
             f'generated_at: "{datetime.now().isoformat()}"',
             "category: pleasure-points",
             "---",
@@ -294,7 +292,7 @@ class BibleMarkdownStore:
         """
         lines = [
             "---",
-            f'framework_version: "1.0.0"',
+            'framework_version: "1.0.0"',
             f'generated_at: "{datetime.now().isoformat()}"',
             "category: characters",
             "---",
@@ -317,27 +315,27 @@ class BibleMarkdownStore:
 
     # ── Load (individual files) ───────────────────────────────────
 
-    def load_world(self) -> Optional[str]:
+    def load_world(self) -> str | None:
         """Load world-building Markdown for agent context."""
         return self._read(FILE_WORLD)
 
-    def load_factions(self) -> Optional[str]:
+    def load_factions(self) -> str | None:
         """Load factions Markdown for agent context."""
         return self._read(FILE_FACTIONS)
 
-    def load_style(self) -> Optional[str]:
+    def load_style(self) -> str | None:
         """Load style contract Markdown for agent context."""
         return self._read(FILE_STYLE)
 
-    def load_themes(self) -> Optional[str]:
+    def load_themes(self) -> str | None:
         """Load themes & conflicts Markdown for agent context."""
         return self._read(FILE_THEMES)
 
-    def load_pleasure_points(self) -> Optional[str]:
+    def load_pleasure_points(self) -> str | None:
         """Load pleasure point model Markdown for agent context."""
         return self._read(FILE_PLEASURE)
 
-    def load_characters(self) -> Optional[str]:
+    def load_characters(self) -> str | None:
         """Load character reference Markdown for agent context."""
         return self._read(FILE_CHARACTERS)
 
@@ -358,7 +356,7 @@ class BibleMarkdownStore:
         path.write_text(content, encoding="utf-8")
         logger.debug(f"Wrote {path}")
 
-    def _read(self, filename: str) -> Optional[str]:
+    def _read(self, filename: str) -> str | None:
         """Read a bible file, returning None if it doesn't exist."""
         path = self._bible_dir / filename
         if not path.exists():
