@@ -10,6 +10,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from ..graph.nodes import get_chapter_phase as _get_chapter_phase
 from ..models.common import HumanDecision
 from ..models.project import ProjectConfig
 from ..models.state import MainState
@@ -327,6 +328,17 @@ async def start_workflow(project_id: str):
             f"Loaded outline, {ch} chapters fully complete, next chapter has phase {_get_chapter_phase(fm, ch + 1)}"
         )
 
+    # ── Restore memory (timeline, foreshadowing, chapter summaries, character states) ──
+    existing_memory = fm.load_memory()
+    if existing_memory:
+        initial_state.memory = existing_memory
+        logger.info(
+            f"Loaded memory for {project_id}: "
+            f"{len(existing_memory.long_term.chapter_summaries)} chapter summaries, "
+            f"{len(existing_memory.timeline)} timeline events, "
+            f"{len(existing_memory.foreshadowing.entries)} foreshadowing entries"
+        )
+
     _active_projects[project_id] = {
         "state": initial_state,
         "file_manager": fm,
@@ -335,7 +347,13 @@ async def start_workflow(project_id: str):
         "current_phase": None,
     }
 
-    asyncio.create_task(_run_phased_workflow(project_id))
+    # Guard against double-start: don't spawn a second run while one is active.
+    existing = _active_projects[project_id].get("task")
+    if existing and not existing.done():
+        return {"status": "already_running", "project_id": project_id}
+
+    task = asyncio.create_task(_run_graph_workflow(project_id))
+    _active_projects[project_id]["task"] = task
     return {"status": "started", "project_id": project_id}
 
 
@@ -595,16 +613,19 @@ async def auto_scan(project_id: str):
 
 @router.post("/projects/{project_id}/confirm-phase")
 async def confirm_phase(project_id: str, req: PhaseConfirmationRequest):
-    """Confirm current phase and proceed to next."""
+    """Confirm current phase and proceed to next.
+
+    Resumes the LangGraph workflow from the human-confirmation interrupt;
+    the resumed run continues in a background task until the next interrupt
+    or completion.
+    """
     proj = _active_projects.get(project_id)
     if not proj:
         raise HTTPException(status_code=404, detail="No active workflow")
 
     proj["phase_input"] = {"inspiration": req.inspiration}
 
-    # Signal the waiting event to unblock
-    if proj.get("phase_event"):
-        proj["phase_event"].set()
+    asyncio.create_task(_resume_graph_workflow(project_id, {"inspiration": req.inspiration}))
 
     return {"status": "confirmed", "phase": proj.get("current_phase")}
 
@@ -667,362 +688,89 @@ async def retry_phase(project_id: str, phase: str, req: PhaseConfirmationRequest
     return {"status": "retried", "phase": phase}
 
 
-async def _run_phased_workflow(project_id: str):
-    """Execute workflow phases sequentially with human confirmation between each."""
-    from .phase_executor import (
-        execute_phase_bible,
-        execute_phase_characters,
-        execute_phase_mini_arc,
-        execute_phase_outline,
-        execute_phase_platform_scan,
-        execute_phase_topic_selection,
-        get_phase_data,
-    )
+# ============================================================
+# Graph-driven workflow execution (LangGraph)
+# ============================================================
+
+def _build_run_context(project_id: str) -> dict:
+    """Build the LangGraph invocation config (thread = project_id)."""
+    fm = _active_projects[project_id]["file_manager"]
+    scheduler = get_scheduler()
+    from ..agents.orchestrator import OrchestratorAgent
+
+    orchestrator = OrchestratorAgent(scheduler)
+    return {
+        "configurable": {
+            "thread_id": project_id,
+            "project_id": project_id,
+            "fm": fm,
+            "scheduler": scheduler,
+            "orchestrator": orchestrator,
+        }
+    }
+
+
+def _interrupt_phase(gi) -> str:
+    """Extract the phase name from a LangGraph GraphInterrupt payload."""
+    phase = "workflow"
+    if getattr(gi, "interrupts", None):
+        payload = gi.interrupts[0].value
+        if isinstance(payload, dict):
+            phase = payload.get("phase", phase)
+    return phase
+
+
+async def _run_graph_workflow(project_id: str):
+    """Run the LangGraph workflow until completion or a human interrupt."""
+    from langgraph.errors import GraphInterrupt
+
+    from ..graph.workflow import get_graph
 
     proj = _active_projects.get(project_id)
     if not proj:
         return
 
-    state: MainState = proj["state"]
-    fm = proj["file_manager"]
-    scheduler = get_scheduler()
-    from ..agents.orchestrator import OrchestratorAgent
-
-    orchestrator = OrchestratorAgent(scheduler)
-
     try:
-        # ================================================================
-        # Phase 0a: Platform Scanning (optional — requires scan data)
-        # ================================================================
-        from .phase_executor import _pending_scan_data
-
-        has_scan_data = bool(_pending_scan_data.get("feilu") or _pending_scan_data.get("fanqie"))
-        if has_scan_data:
-            await _run_single_phase(
-                project_id,
-                state,
-                orchestrator,
-                fm,
-                "platform_scan",
-                execute_phase_platform_scan,
-            )
-            if not await _wait_for_confirmation(project_id, "platform_scan"):
-                return
-
-            # Phase 0b: Topic Selection
-            await _run_single_phase(
-                project_id,
-                state,
-                orchestrator,
-                fm,
-                "topic_selection",
-                execute_phase_topic_selection,
-            )
-            if not await _wait_for_confirmation(project_id, "topic_selection"):
-                return
-            state = _apply_inspiration(project_id, state)
-
-            # Phase 0c: Mini-Arc Outline
-            await _run_single_phase(
-                project_id,
-                state,
-                orchestrator,
-                fm,
-                "mini_arc_outline",
-                execute_phase_mini_arc,
-            )
-            if not await _wait_for_confirmation(project_id, "mini_arc_outline"):
-                return
-            state = _apply_inspiration(project_id, state)
-        else:
-            logger.info("No scan data — skipping Phase 0 (topic research)")
-
-        # === Phase 1: Bible Construction (世界观) ===
-        if not state.bible:
-            await _run_single_phase(
-                project_id,
-                state,
-                orchestrator,
-                fm,
-                "bible_construction",
-                execute_phase_bible,
-            )
-            if not await _wait_for_confirmation(project_id, "bible_construction"):
-                return
-            state = _apply_inspiration(project_id, state)
-        else:
-            await ws_manager.broadcast_phase_update(project_id, "bible_construction", 1.0, "世界观已存在，跳过")
-            await ws_manager.broadcast_phase_complete(
-                project_id, "bible_construction", get_phase_data(state, "bible_construction")
-            )
-
-        # === Phase 2: Character Creation (角色) ===
-        if not state.characters:
-            await _run_single_phase(
-                project_id,
-                state,
-                orchestrator,
-                fm,
-                "character_creation",
-                execute_phase_characters,
-            )
-            if not await _wait_for_confirmation(project_id, "character_creation"):
-                return
-            state = _apply_inspiration(project_id, state)
-        else:
-            await ws_manager.broadcast_phase_update(project_id, "character_creation", 1.0, "角色已存在，跳过")
-            await ws_manager.broadcast_phase_complete(
-                project_id, "character_creation", get_phase_data(state, "character_creation")
-            )
-
-        # === Phase 3: Master Outline (大纲) ===
-        if not state.outline:
-            await _run_single_phase(
-                project_id,
-                state,
-                orchestrator,
-                fm,
-                "master_outline",
-                execute_phase_outline,
-            )
-            if not await _wait_for_confirmation(project_id, "master_outline"):
-                return
-            state = _apply_inspiration(project_id, state)
-        else:
-            await ws_manager.broadcast_phase_update(project_id, "master_outline", 1.0, "大纲已存在，跳过")
-            await ws_manager.broadcast_phase_complete(
-                project_id, "master_outline", get_phase_data(state, "master_outline")
-            )
-
-        # === Phase 4: Chapter Loop ===
-        from .phase_executor import (
-            execute_phase_chapter_planning,
-        )
-
-        total = max(state.outline.chapter_count if state.outline else 0, state.total_chapters, 3)
-        # Calculate per-chapter progress increment
-        chapter_progress_increment = 85.0 / max(total, 1)  # 5%→90% range
-
-        while state.current_chapter_number < total:
-            ch = state.current_chapter_number + 1
-            base_progress = 5 + (state.current_chapter_number * chapter_progress_increment)
-
-            # Track per-chapter phase: 0=not started, 1=planned, 2=written, 3=reviewed, 4=polished, 5=done
-            ch_phase = _get_chapter_phase(fm, ch)
-            await ws_manager.broadcast_phase_update(
-                project_id, "chapter_loop", base_progress / 100, f"第{ch}章（共{total}章）· 阶段{ch_phase}/5"
-            )
-
-            # Plan chapter (phase 0→1)
-            if ch_phase < 1:
-                await _run_single_phase(
-                    project_id,
-                    state,
-                    orchestrator,
-                    fm,
-                    "chapter_planning",
-                    execute_phase_chapter_planning,
-                )
-                if state.chapter_plan:
-                    fm.save_chapter_plan(state.chapter_plan)
-                _set_chapter_phase(fm, ch, 1)
-
-            # Write chapter (phase 1→2)
-            if _get_chapter_phase(fm, ch) < 2:
-                proj = _active_projects.get(project_id)
-                if proj:
-                    proj["current_phase"] = "chapter_writing"
-                await ws_manager.broadcast_phase_update(
-                    project_id, "chapter_writing", (base_progress + 4) / 100, f"正在写作第{ch}章..."
-                )
-                state = await orchestrator.write_chapter(state)
-                if state.chapter_draft:
-                    fm.save_chapter_draft(state.chapter_draft)
-                _set_chapter_phase(fm, ch, 2)
-
-            # Review (phase 2→3)
-            if _get_chapter_phase(fm, ch) < 3:
-                state = await orchestrator.review_chapter(state)
-                if state.review_report:
-                    fm.save_review_report(state.review_report)
-                    await ws_manager.broadcast(
-                        project_id,
-                        {
-                            "type": "chapter_complete",
-                            "chapter": ch,
-                            "scores": state.review_report.dimension_scores,
-                        },
-                    )
-                _set_chapter_phase(fm, ch, 3)
-
-            # Polish (phase 3→4)
-            if _get_chapter_phase(fm, ch) < 4:
-                await ws_manager.broadcast_phase_update(
-                    project_id, "polish_revision", (base_progress + 8) / 100, f"润色第{ch}章..."
-                )
-                state = await orchestrator.polish_chapter(state)
-                if state.polished_chapter:
-                    fm.save_chapter_markdown(state.polished_chapter)
-                _set_chapter_phase(fm, ch, 4)
-
-            # Memory (phase 4→5)
-            if _get_chapter_phase(fm, ch) < 5:
-                state = await orchestrator.update_memory(state)
-                if state.memory:
-                    fm.save_memory(state.memory)
-                _set_chapter_phase(fm, ch, 5)
-
-            state.current_chapter_number = ch
-            await ws_manager.broadcast_phase_update(
-                project_id, "chapter_loop", (base_progress + 16) / 100, f"第{ch}章完成 ✓"
-            )
-
+        await get_graph().ainvoke(proj["state"], config=_build_run_context(project_id))
         await ws_manager.broadcast(
             project_id,
-            {
-                "type": "workflow_complete",
-                "message": f"全部{total}章已完成！",
-            },
+            {"type": "workflow_complete", "message": "全部流程已完成！"},
         )
-
+    except GraphInterrupt as gi:
+        phase = _interrupt_phase(gi)
+        proj["current_phase"] = phase
+        proj["phase_input"] = {}
+        await ws_manager.broadcast_phase_blocked(project_id, phase)
     except Exception as e:
         logger.error(f"Workflow error for {project_id}: {e}", exc_info=True)
         await ws_manager.broadcast_error(project_id, "workflow", str(e))
 
 
-async def _run_single_phase(
-    project_id: str,
-    state: MainState,
-    orchestrator,
-    fm,
-    phase: str,
-    executor_fn,
-) -> None:
-    """Execute one phase and broadcast progress with heartbeat updates."""
-    from .phase_executor import PHASE_LABELS, get_phase_data
+async def _resume_graph_workflow(project_id: str, resume_payload: dict):
+    """Resume a workflow paused at a human-confirmation interrupt."""
+    from langgraph.errors import GraphInterrupt
+    from langgraph.types import Command
+
+    from ..graph.workflow import get_graph
 
     proj = _active_projects.get(project_id)
-    if proj:
+    if not proj:
+        return
+
+    try:
+        await get_graph().ainvoke(Command(resume=resume_payload), config=_build_run_context(project_id))
+        await ws_manager.broadcast(
+            project_id,
+            {"type": "workflow_complete", "message": "全部流程已完成！"},
+        )
+    except GraphInterrupt as gi:
+        phase = _interrupt_phase(gi)
         proj["current_phase"] = phase
-
-    label = PHASE_LABELS.get(phase, phase)
-
-    # Heartbeat: send periodic "still working" updates so the user knows the process is alive
-    heartbeat_stop = asyncio.Event()
-
-    async def _heartbeat():
-        dots = 0
-        while not heartbeat_stop.is_set():
-            dots = (dots + 1) % 4
-            await ws_manager.broadcast_phase_update(
-                project_id,
-                phase,
-                0.15 + (dots * 0.02),
-                f"正在{label}{'.' * dots}",
-            )
-            try:
-                await asyncio.wait_for(heartbeat_stop.wait(), timeout=3)
-            except TimeoutError:
-                pass
-
-    heartbeat_task = asyncio.create_task(_heartbeat())
-    await ws_manager.broadcast_phase_update(project_id, phase, 0.1, f"正在{label}...")
-
-    try:
-        await executor_fn(state, orchestrator, fm)
+        await ws_manager.broadcast_phase_blocked(project_id, phase)
     except Exception as e:
-        heartbeat_stop.set()
-        heartbeat_task.cancel()
-        logger.error(f"Phase {phase} failed: {e}", exc_info=True)
-        await ws_manager.broadcast_error(project_id, phase, str(e))
-        raise
+        logger.error(f"Workflow resume error for {project_id}: {e}", exc_info=True)
+        await ws_manager.broadcast_error(project_id, "workflow", str(e))
 
-    heartbeat_stop.set()
-    heartbeat_task.cancel()
-
-    # Broadcast completion with data
-    phase_data = get_phase_data(state, phase)
-    await ws_manager.broadcast_phase_update(project_id, phase, 1.0, f"{label}完成")
-    await ws_manager.broadcast_phase_complete(project_id, phase, phase_data)
-
-
-async def _wait_for_confirmation(project_id: str, phase: str) -> bool:
-    """Wait for human confirmation. Returns False on timeout."""
-    from .phase_executor import PHASE_LABELS
-
-    proj = _active_projects.get(project_id)
-    if not proj:
-        return False
-
-    PHASE_LABELS.get(phase, phase)
-    await ws_manager.broadcast_phase_blocked(project_id, phase)
-
-    proj["phase_event"].clear()
-    try:
-        await asyncio.wait_for(proj["phase_event"].wait(), timeout=3600)
-        return True
-    except TimeoutError:
-        logger.warning(f"Phase confirmation timeout for {project_id}")
-        return False
-
-
-def _get_chapter_phase(fm, ch: int) -> int:
-    """Get the completion phase of a chapter (0-5). Persisted to disk."""
-    import json
-    import os
-
-    phase_file = os.path.join(fm.root, "output", "chapters", f"chapter_{ch:03d}_phase.json")
-    try:
-        if os.path.exists(phase_file):
-            with open(phase_file) as f:
-                return json.load(f).get("phase", 0)
-    except Exception:
-        pass
-    # Fallback: detect from existing files
-    if fm.load_chapter_markdown(ch):
-        return 4  # Has polished content
-    if fm.load_review_report(ch) if hasattr(fm, "load_review_report") else False:
-        return 3
-    if fm.load_chapter_draft(ch) if hasattr(fm, "load_chapter_draft") else False:
-        return 2
-    if fm.load_chapter_plan(ch):
-        return 1
-    return 0
-
-
-def _set_chapter_phase(fm, ch: int, phase: int):
-    """Save chapter completion phase to disk."""
-    import json
-    import os
-
-    phase_dir = os.path.join(fm.root, "output", "chapters")
-    os.makedirs(phase_dir, exist_ok=True)
-    phase_file = os.path.join(phase_dir, f"chapter_{ch:03d}_phase.json")
-    with open(phase_file, "w") as f:
-        json.dump({"chapter": ch, "phase": phase}, f)
-
-
-def _apply_inspiration(project_id: str, state: MainState) -> MainState:
-    """Apply user inspiration to state for the next phase."""
-    proj = _active_projects.get(project_id)
-    if not proj:
-        return state
-
-    phase_input = proj.get("phase_input", {})
-    inspiration = phase_input.get("inspiration", "")
-    if inspiration:
-        state.current_inspiration = inspiration
-        # Clear for next round
-        proj["phase_input"] = {}
-    return state
-
-
-# ============================================================
-# Human Decision
-# ============================================================
-
-
-@router.post("/projects/{project_id}/human-decision")
 async def submit_human_decision(project_id: str, req: HumanDecisionRequest):
     """Submit a human decision with structured feedback (accept/revise/rewrite/rollback).
 
@@ -1124,11 +872,20 @@ async def list_chapters(project_id: str):
     chapters = []
     for num in plans:
         plan = fm.load_chapter_plan(num)
+        # Derive real status from the persisted per-chapter phase (0-5)
+        phase = _get_chapter_phase(fm, num)
+        status = (
+            "done" if phase >= 4
+            else "polishing" if phase >= 3
+            else "reviewing" if phase >= 2
+            else "writing" if phase >= 1
+            else "planned"
+        )
         chapters.append(
             {
                 "chapter_number": num,
                 "title": plan.title if plan else "",
-                "status": plan.status if plan else "unknown",
+                "status": status,
             }
         )
     return chapters

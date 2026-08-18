@@ -1,4 +1,9 @@
-"""LangGraph conditional edge routing functions."""
+"""LangGraph conditional edge routing functions.
+
+These functions are the *actual* routing used by the compiled workflow
+(graph/workflow.py): the review accept/revise/rewrite decision and the
+chapter-loop next/done decision.
+"""
 
 import logging
 from typing import Literal
@@ -13,8 +18,6 @@ ROUTE_REVISE = "revise"
 ROUTE_REWRITE = "rewrite"
 ROUTE_NEXT = "next_chapter"
 ROUTE_DONE = "done"
-ROUTE_ROLLBACK = "rollback"
-ROUTE_RESTART_BIBLE = "restart_bible"
 
 
 def review_decision(state: MainState) -> Literal["accept", "revise", "rewrite"]:
@@ -22,8 +25,8 @@ def review_decision(state: MainState) -> Literal["accept", "revise", "rewrite"]:
 
     Decision logic:
     - If max iterations reached → accept (force through)
-    - If critical issues or score < 4.0 → rewrite (back to chapter_writing)
-    - If score < 6.5 or AI-flavor < 5.0 → revise (back to chapter_writing with feedback)
+    - If critical issues or score < 4.0 → rewrite (back to chapter planning)
+    - If score < 6.5 or AI-flavor < 5.0 → revise (back to chapter writing)
     - Otherwise → accept (proceed to polish)
     """
     report = state.review_report
@@ -53,44 +56,13 @@ def review_decision(state: MainState) -> Literal["accept", "revise", "rewrite"]:
 def next_chapter_or_done(state: MainState) -> Literal["next_chapter", "done"]:
     """Check if there are more chapters to write.
 
-    Returns 'next_chapter' to loop back to chapter_planning,
-    or 'done' to proceed to human_confirmation.
+    Total chapters comes from the master outline when available, otherwise
+    the state's total_chapters, with a floor of 3 (matching the original
+    runtime so the loop always terminates).
     """
-    if state.has_more_chapters():
-        logger.info(f"More chapters remain (at {state.current_chapter_number}/{state.total_chapters})")
+    total = max((state.outline.chapter_count if state.outline else 0), state.total_chapters, 3)
+    if state.current_chapter_number < total:
+        logger.info(f"More chapters remain (at {state.current_chapter_number}/{total})")
         return ROUTE_NEXT
-    logger.info("All chapters complete")
+    logger.info(f"All {total} chapters complete")
     return ROUTE_DONE
-
-
-def human_confirmation_decision(
-    state: MainState,
-) -> Literal["accept", "revise", "rewrite", "rollback", "restart_bible"]:
-    """Route based on human decision after chapter review.
-
-    - accept → proceed to next chapter or end
-    - revise → back to polish_revision with feedback
-    - rewrite → back to chapter_writing with feedback
-    - rollback → back to chapter_planning
-    - restart_bible → back to bible_construction (deep rollback)
-    """
-    decision = state.human_decision
-    if decision is None:
-        logger.info("No human decision yet — defaulting to accept")
-        return ROUTE_ACCEPT
-
-    decision_value = decision.value if hasattr(decision, "value") else str(decision)
-    logger.info(f"Human decision: {decision_value}")
-
-    if decision_value == "accept":
-        return ROUTE_ACCEPT
-    elif decision_value == "revise":
-        return ROUTE_REVISE
-    elif decision_value == "rewrite":
-        return ROUTE_REWRITE
-    elif decision_value == "rollback":
-        if state.rollback_target == "bible":
-            return ROUTE_RESTART_BIBLE
-        return ROUTE_ROLLBACK
-    else:
-        return ROUTE_ACCEPT

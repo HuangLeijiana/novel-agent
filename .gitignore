@@ -33,6 +33,7 @@ Thumbs.db
 
 # ── Project: generated output ──
 workspace/
+.test_workspace/
 
 # ── Project: debug artifacts ──
 feilu-rank-snapshot.md

@@ -3,6 +3,7 @@
 import asyncio
 import logging
 from pathlib import Path
+from typing import Any
 
 from ..llm.scheduler import ModelScheduler
 from ..models.bible import NovelBible
@@ -172,6 +173,10 @@ class OrchestratorAgent:
         self.topic_scout = TopicScoutAgent(scheduler)
         self.reviewer = ReviewerAgent(scheduler)
         self.chapter_inspector = ChapterInspector()
+
+        # RAG (lazy-init per project)
+        self._rag: Any = None  # NovelRAG instance, set per project
+        self._rag_project_id: str | None = None
 
     # ================================================================
     # Phase 1: Project Initialization
@@ -689,6 +694,9 @@ class OrchestratorAgent:
         logger.info(f"Phase 4: Planning chapter {chapter_num}...")
         state.current_phase = "chapter_planning"
 
+        # Sync character states before planning
+        state.sync_character_states()
+
         plan = await self.plot_planner.plan_chapter(
             chapter_number=chapter_num,
             config=state.project_config,
@@ -726,6 +734,22 @@ class OrchestratorAgent:
 
         revision_feedback = state.human_feedback if state.human_decision == "revise" else None
 
+        # Sync memory character states back to the registry so the writer sees
+        # up-to-date character states, not the static ones from creation.
+        state.sync_character_states()
+
+        # ── RAG retrieval: semantically search for relevant history ──
+        rag_context = ""
+        rag = self._get_rag()
+        if rag is not None:
+            try:
+                results = await rag.retrieve_for_writing(state.chapter_plan)
+                rag_context = rag.retriever.format_context_for_prompt(results)
+                if rag_context:
+                    logger.info(f"RAG context retrieved: {len(rag_context)} chars")
+            except Exception as e:
+                logger.warning(f"RAG retrieval failed: {e}")
+
         draft = await self.writer.generate_chapter(
             chapter_plan=state.chapter_plan,
             config=state.project_config,
@@ -734,13 +758,15 @@ class OrchestratorAgent:
             outline=state.outline,
             memory=state.memory,
             revision_feedback=revision_feedback,
+            rag_context=rag_context,
         )
 
-        # Extract facts and state changes
+        # Extract facts and state changes (with contradiction detection)
         draft = await self.writer.extract_facts_and_changes(
             draft=draft,
             bible=state.bible,
             characters=state.characters,
+            memory=state.memory,
         )
 
         # ── Structural inspection (deterministic, no LLM cost) ──
@@ -783,7 +809,10 @@ class OrchestratorAgent:
         )
 
         if not inspection.passed:
-            logger.warning(f"Chapter {draft.chapter_number} structural issues: {inspection.format_report(inspection)}")
+            logger.warning(
+                f"Chapter {draft.chapter_number} structural issues: "
+                f"{self.chapter_inspector.format_report(inspection)}"
+            )
 
         return state
 
@@ -971,6 +1000,55 @@ class OrchestratorAgent:
         return state
 
     # ================================================================
+    # RAG helpers (lazy init, graceful fallback)
+    # ================================================================
+
+    def _get_rag(self, project_id: str | None = None) -> Any:
+        """Get or create the NovelRAG instance for the current project.
+
+        Returns None if RAG dependencies are not installed.
+        """
+        pid = project_id or self._rag_project_id or "default"
+        if self._rag is not None and self._rag_project_id == pid:
+            return self._rag
+
+        try:
+            from pathlib import Path
+
+            from ..rag import NovelRAG
+        except ImportError:
+            logger.debug("RAG dependencies not available — semantic search disabled")
+            return None
+
+        persist_dir = Path("workspace/projects") / pid / "rag"
+        persist_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self._rag = NovelRAG(str(persist_dir))
+            self._rag_project_id = pid
+            logger.info(f"RAG initialized for project {pid} at {persist_dir}")
+            return self._rag
+        except Exception as e:
+            logger.warning(f"Failed to initialize RAG: {e} — continuing without semantic search")
+            self._rag = None
+            return None
+
+    async def _rag_index_chapter(self, state: MainState, project_id: str | None = None) -> None:
+        """Index the just-completed chapter into the RAG store."""
+        rag = self._get_rag(project_id)
+        if rag is None:
+            return
+        try:
+            await rag.index_chapter(
+                chapter_num=state.current_chapter_number,
+                summary=state.memory.short_term.current_chapter_summary if state.memory else "",
+                facts=list(state.memory.long_term.facts.values()) if state.memory else [],
+                timeline_events=state.memory.timeline if state.memory else [],
+                foreshadowing_entries=state.memory.foreshadowing.entries if state.memory else [],
+            )
+        except Exception as e:
+            logger.warning(f"RAG indexing failed: {e} — continuing without indexing")
+
+    # ================================================================
     # Phase 8: Memory Update
     # ================================================================
 
@@ -996,5 +1074,14 @@ class OrchestratorAgent:
                 f"{len(memory.timeline)} timeline events",
             )
         )
+
+        # ── Periodic hierarchical consolidation ──
+        state.memory = await self.memory_manager.consolidate_periodically(
+            memory=state.memory,
+            chapter_num=state.current_chapter_number,
+        )
+
+        # ── RAG indexing (non-blocking, graceful fallback) ──
+        await self._rag_index_chapter(state)
 
         return state

@@ -104,7 +104,10 @@ novel-agent/
 │   ├── api/             # FastAPI server, WebSocket, routes
 │   ├── config/          # Settings, model assignments
 │   ├── frontend/        # Web UI (index.html + vanilla JS + CSS)
-│   ├── graph/           # LangGraph pipeline definition
+│   ├── graph/           # ★ LangGraph workflow — the real runtime engine
+│   │   ├── workflow.py  #   StateGraph: Phase 0 → bible → characters → outline → chapter loop
+│   │   ├── nodes.py     #   Phase nodes (executors + persistence + progress broadcasts)
+│   │   └── edges.py     #   Conditional routing: review accept/revise/rewrite, next-chapter/done
 │   ├── llm/             # Model scheduler, providers, JSON repair
 │   ├── models/          # Pydantic data models (outline, bible, chapter, etc.)
 │   ├── storage/         # Workspace file I/O
@@ -114,6 +117,23 @@ novel-agent/
 ├── pyproject.toml
 └── README.md
 ```
+
+### How the graph runs
+
+The workflow is a **real LangGraph StateGraph** (`src/graph/workflow.py`) — the
+FastAPI layer invokes it directly; there is no parallel hand-written loop.
+
+- **Routing is live**: `edges.py` decides review accept/revise/rewrite (with
+  `MAX_REVIEW_ITERATIONS` forcing acceptance) and the next-chapter/done
+  transition; chapters loop until the outline's chapter count is reached.
+- **Human-in-the-loop is `interrupt()`-based**: after each top-level phase
+  (scan → topic → mini-arc → bible → characters → outline) the graph pauses;
+  the API layer broadcasts `phase_blocked` and resumes with
+  `Command(resume=...)` when you confirm — persisted by the checkpointer
+  (MemorySaver, or AsyncSqliteSaver via `build_async_workflow(db_path)`).
+- **Resume & skip are preserved**: completed artifacts are detected from disk,
+  so re-running a project skips finished phases and resumes mid-chapter.
+
 
 ## Pipeline Phases
 
