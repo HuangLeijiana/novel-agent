@@ -60,7 +60,11 @@ def next_chapter_or_done(state: MainState) -> Literal["next_chapter", "done"]:
     the state's total_chapters, with a floor of 3 (matching the original
     runtime so the loop always terminates).
     """
-    total = max((state.outline.chapter_count if state.outline else 0), state.total_chapters, 3)
+    total = max(
+        (getattr(state.outline, "chapter_count", 0) if state.outline else 0),
+        state.total_chapters,
+        3,
+    )
     if state.current_chapter_number < total:
         logger.info(f"More chapters remain (at {state.current_chapter_number}/{total})")
         return ROUTE_NEXT

@@ -720,6 +720,23 @@ def _interrupt_phase(gi) -> str:
     return phase
 
 
+def _pending_interrupt_phase(result) -> str | None:
+    """Extract the phase name from a run result's __interrupt__ list, if any.
+
+    Modern LangGraph does not raise on interrupt(): it returns the state dict
+    with a '__interrupt__' key holding the pending Interrupt objects.
+    """
+    if not isinstance(result, dict):
+        return None
+    interrupts = result.get("__interrupt__")
+    if not interrupts:
+        return None
+    payload = interrupts[0].value
+    if isinstance(payload, dict):
+        return payload.get("phase", "workflow")
+    return "workflow"
+
+
 async def _run_graph_workflow(project_id: str):
     """Run the LangGraph workflow until completion or a human interrupt."""
     from langgraph.errors import GraphInterrupt
@@ -731,12 +748,18 @@ async def _run_graph_workflow(project_id: str):
         return
 
     try:
-        await get_graph().ainvoke(proj["state"], config=_build_run_context(project_id))
-        await ws_manager.broadcast(
-            project_id,
-            {"type": "workflow_complete", "message": "全部流程已完成！"},
-        )
-    except GraphInterrupt as gi:
+        result = await get_graph().ainvoke(proj["state"], config=_build_run_context(project_id))
+        phase = _pending_interrupt_phase(result)
+        if phase is not None:
+            proj["current_phase"] = phase
+            proj["phase_input"] = {}
+            await ws_manager.broadcast_phase_blocked(project_id, phase)
+        else:
+            await ws_manager.broadcast(
+                project_id,
+                {"type": "workflow_complete", "message": "全部流程已完成！"},
+            )
+    except GraphInterrupt as gi:  # older LangGraph behaviour (raise-based)
         phase = _interrupt_phase(gi)
         proj["current_phase"] = phase
         proj["phase_input"] = {}
@@ -758,12 +781,19 @@ async def _resume_graph_workflow(project_id: str, resume_payload: dict):
         return
 
     try:
-        await get_graph().ainvoke(Command(resume=resume_payload), config=_build_run_context(project_id))
-        await ws_manager.broadcast(
-            project_id,
-            {"type": "workflow_complete", "message": "全部流程已完成！"},
+        result = await get_graph().ainvoke(
+            Command(resume=resume_payload), config=_build_run_context(project_id)
         )
-    except GraphInterrupt as gi:
+        phase = _pending_interrupt_phase(result)
+        if phase is not None:
+            proj["current_phase"] = phase
+            await ws_manager.broadcast_phase_blocked(project_id, phase)
+        else:
+            await ws_manager.broadcast(
+                project_id,
+                {"type": "workflow_complete", "message": "全部流程已完成！"},
+            )
+    except GraphInterrupt as gi:  # older LangGraph behaviour (raise-based)
         phase = _interrupt_phase(gi)
         proj["current_phase"] = phase
         await ws_manager.broadcast_phase_blocked(project_id, phase)
