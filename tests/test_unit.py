@@ -487,10 +487,11 @@ class TestParseOverride:
         from src.config.settings import Settings
 
         settings = Settings(
-            DEFAULT_PROVIDER="modelscope",
-            DEFAULT_MODEL="Qwen/Qwen3-235B-A22B",
-            OPENAI_API_KEY="test-key",
-            OPENAI_BASE_URL="https://api-inference.modelscope.cn/v1",
+            default_provider="modelscope",
+            default_model="Qwen/Qwen3-235B-A22B",
+            openai_api_key="test-key",
+            openai_base_url="https://api-inference.modelscope.cn/v1",
+            _env_file=None,
         )
         provider, model, fallback = _parse_override("Qwen/Qwen3-8B", settings)
         assert provider == "modelscope"
