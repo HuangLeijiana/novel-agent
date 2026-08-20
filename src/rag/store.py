@@ -37,9 +37,7 @@ class NovelVectorStore:
             try:
                 import chromadb
             except ImportError:
-                raise ImportError(
-                    "chromadb is required for RAG. Install with: pip install novel-agent[rag]"
-                )
+                raise ImportError("chromadb is required for RAG. Install with: pip install novel-agent[rag]")
             self._client = chromadb.PersistentClient(path=self._persist_dir)
         return self._client
 
@@ -214,12 +212,14 @@ class NovelVectorStore:
         distances = results.get("distances", [[]])[0] if results.get("distances") else []
 
         for i in range(len(ids_list)):
-            formatted.append({
-                "id": ids_list[i] if i < len(ids_list) else "",
-                "document": docs_list[i] if i < len(docs_list) else "",
-                "metadata": metas_list[i] if i < len(metas_list) else {},
-                "distance": distances[i] if i < len(distances) else 1.0,
-            })
+            formatted.append(
+                {
+                    "id": ids_list[i] if i < len(ids_list) else "",
+                    "document": docs_list[i] if i < len(docs_list) else "",
+                    "metadata": metas_list[i] if i < len(metas_list) else {},
+                    "distance": distances[i] if i < len(distances) else 1.0,
+                }
+            )
         return formatted
 
     def count_all(self) -> dict[str, int]:

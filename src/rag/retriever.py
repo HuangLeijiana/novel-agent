@@ -233,15 +233,17 @@ class NovelRAG:
             fact_tuples = []
             for f in facts:
                 text = f"{f.category}: {f.description}" if hasattr(f, "category") else str(f)
-                fact_tuples.append((
-                    getattr(f, "id", str(hash(text))),
-                    text,
-                    {
-                        "chapter_num": chapter_num,
-                        "category": getattr(f, "category", ""),
-                        "certainty": getattr(f, "certainty", 1.0),
-                    },
-                ))
+                fact_tuples.append(
+                    (
+                        getattr(f, "id", str(hash(text))),
+                        text,
+                        {
+                            "chapter_num": chapter_num,
+                            "category": getattr(f, "category", ""),
+                            "certainty": getattr(f, "certainty", 1.0),
+                        },
+                    )
+                )
             self._store.index_facts(fact_tuples)
 
         # Index timeline events
@@ -249,15 +251,17 @@ class NovelRAG:
             event_tuples = []
             for e in timeline_events:
                 text = f"{e.in_story_time}: {e.description}" if hasattr(e, "in_story_time") else str(e)
-                event_tuples.append((
-                    getattr(e, "id", str(hash(text))),
-                    text,
-                    {
-                        "chapter_num": chapter_num,
-                        "importance": getattr(e, "importance", "minor"),
-                        "location": getattr(e, "location", ""),
-                    },
-                ))
+                event_tuples.append(
+                    (
+                        getattr(e, "id", str(hash(text))),
+                        text,
+                        {
+                            "chapter_num": chapter_num,
+                            "importance": getattr(e, "importance", "minor"),
+                            "location": getattr(e, "location", ""),
+                        },
+                    )
+                )
             self._store.index_timeline_events(event_tuples)
 
         # Index foreshadowing
@@ -265,15 +269,17 @@ class NovelRAG:
             fs_tuples = []
             for f in foreshadowing_entries:
                 text = str(f.description) if hasattr(f, "description") else str(f)
-                fs_tuples.append((
-                    getattr(f, "id", str(hash(text))),
-                    text,
-                    {
-                        "chapter_num": chapter_num,
-                        "status": getattr(f, "status", "active"),
-                        "planted_chapter": getattr(f, "planted_chapter", chapter_num),
-                    },
-                ))
+                fs_tuples.append(
+                    (
+                        getattr(f, "id", str(hash(text))),
+                        text,
+                        {
+                            "chapter_num": chapter_num,
+                            "status": getattr(f, "status", "active"),
+                            "planted_chapter": getattr(f, "planted_chapter", chapter_num),
+                        },
+                    )
+                )
             self._store.index_foreshadowing(fs_tuples)
 
         logger.info(

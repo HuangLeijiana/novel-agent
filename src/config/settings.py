@@ -62,6 +62,9 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        # 允许构造参数同时使用字段名（default_provider）与环境变量名（DEFAULT_PROVIDER），
+        # 避免 Settings(DEFAULT_PROVIDER=...) 被 extra="ignore" 静默丢弃。
+        populate_by_name=True,
     )
 
     # --- API Keys (all optional — only configure what you use) ---

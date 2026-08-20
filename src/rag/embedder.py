@@ -1,7 +1,6 @@
 """Embedding model wrapper — lazy-loads sentence-transformers for Chinese text."""
 
 import logging
-from typing import TYPE_CHECKING
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +31,7 @@ class Embedder:
                 from sentence_transformers import SentenceTransformer
             except ImportError:
                 raise ImportError(
-                    "sentence-transformers is required for RAG embeddings. "
-                    "Install with: pip install novel-agent[rag]"
+                    "sentence-transformers is required for RAG embeddings. Install with: pip install novel-agent[rag]"
                 )
             logger.info(f"Loading embedding model: {self._model_name}")
             self._model = SentenceTransformer(self._model_name)

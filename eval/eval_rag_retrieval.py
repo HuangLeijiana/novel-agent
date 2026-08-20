@@ -36,9 +36,7 @@ from rag.embedder import Embedder  # noqa: E402
 from rag.store import NovelVectorStore  # noqa: E402
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_MEMORY_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "fixtures", "memory"
-)
+DEFAULT_MEMORY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "memory")
 DEFAULT_STORE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "eval_store")
 DEFAULT_OUT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rag_retrieval_results.json")
 DEFAULT_OLLAMA_URL = "http://localhost:11434/api/generate"
@@ -48,16 +46,15 @@ DEFAULT_BGE_MODEL = "BAAI/bge-small-zh-v1.5"
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate RAG memory retrieval (recall@k / MRR).")
-    parser.add_argument("--bge-model", default=DEFAULT_BGE_MODEL,
-                        help="BGE 模型名或本地路径（默认 BAAI/bge-small-zh-v1.5）")
-    parser.add_argument("--memory-dir", default=DEFAULT_MEMORY_DIR,
-                        help="记忆数据目录（含 long_term.yaml / timeline.yaml）")
-    parser.add_argument("--store-dir", default=DEFAULT_STORE_DIR,
-                        help="ChromaDB 持久化目录")
-    parser.add_argument("--ollama-url", default=DEFAULT_OLLAMA_URL,
-                        help="Ollama API 地址")
-    parser.add_argument("--ollama-model", default=DEFAULT_OLLAMA_MODEL,
-                        help="Ollama 查询改写模型")
+    parser.add_argument(
+        "--bge-model", default=DEFAULT_BGE_MODEL, help="BGE 模型名或本地路径（默认 BAAI/bge-small-zh-v1.5）"
+    )
+    parser.add_argument(
+        "--memory-dir", default=DEFAULT_MEMORY_DIR, help="记忆数据目录（含 long_term.yaml / timeline.yaml）"
+    )
+    parser.add_argument("--store-dir", default=DEFAULT_STORE_DIR, help="ChromaDB 持久化目录")
+    parser.add_argument("--ollama-url", default=DEFAULT_OLLAMA_URL, help="Ollama API 地址")
+    parser.add_argument("--ollama-model", default=DEFAULT_OLLAMA_MODEL, help="Ollama 查询改写模型")
     parser.add_argument("--top-k", type=int, default=5, help="检索 top-k")
     parser.add_argument("--output", default=DEFAULT_OUT_PATH, help="结果 JSON 输出路径")
     return parser.parse_args()
@@ -69,41 +66,44 @@ def load_docs(memory_dir: str) -> list[tuple[str, str, dict]]:
     lt_path = os.path.join(memory_dir, "long_term.yaml")
     tl_path = os.path.join(memory_dir, "timeline.yaml")
     if not os.path.exists(lt_path) or not os.path.exists(tl_path):
-        raise FileNotFoundError(
-            f"memory dir 缺少 long_term.yaml / timeline.yaml: {memory_dir}"
-        )
+        raise FileNotFoundError(f"memory dir 缺少 long_term.yaml / timeline.yaml: {memory_dir}")
     lt = yaml.safe_load(open(lt_path, encoding="utf-8"))
     for fid, item in lt.get("facts", {}).items():
         docs.append(
-            (fid, item["description"],
-             {"type": "fact", "category": item.get("category", ""),
-              "source_chapter": item.get("source_chapter", 0)})
+            (
+                fid,
+                item["description"],
+                {"type": "fact", "category": item.get("category", ""), "source_chapter": item.get("source_chapter", 0)},
+            )
         )
     tl = yaml.safe_load(open(tl_path, encoding="utf-8"))
     for ev in tl:
         docs.append(
-            (ev["id"], ev["description"],
-             {"type": "event", "importance": ev.get("importance", ""),
-              "chapter": ev.get("chapter", 0)})
+            (
+                ev["id"],
+                ev["description"],
+                {"type": "event", "importance": ev.get("importance", ""), "chapter": ev.get("chapter", 0)},
+            )
         )
     return docs
 
 
-def ollama_paraphrase(text: str, ollama_url: str, ollama_model: str,
-                      max_chars: int = 120) -> tuple[str, bool]:
+def ollama_paraphrase(text: str, ollama_url: str, ollama_model: str, max_chars: int = 120) -> tuple[str, bool]:
     """本地 qwen3:8b 把事实改写为自然检索问题；失败时退化为原文。"""
     prompt = (
         "把下面这句话改写成一个自然的中文检索问题（用于从小说记忆库中检索这条信息），"
         f"只输出问题本身，不要解释，不要加引号：\n{text}"
     )
-    body = json.dumps({
-        "model": ollama_model, "prompt": prompt, "stream": False,
-        "options": {"temperature": 0.7, "num_predict": 128},
-    }).encode("utf-8")
+    body = json.dumps(
+        {
+            "model": ollama_model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {"temperature": 0.7, "num_predict": 128},
+        }
+    ).encode("utf-8")
     try:
-        req = urllib.request.Request(
-            ollama_url, data=body, headers={"Content-Type": "application/json"}
-        )
+        req = urllib.request.Request(ollama_url, data=body, headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=120) as r:
             resp = json.load(r)
         q = resp.get("response", "").strip().strip('"').strip("“”")
@@ -157,7 +157,7 @@ def main() -> None:
                     if rank <= k:
                         hits_at[k] += 1
             if (idx + 1) % 10 == 0:
-                print(f"  {label} {idx+1}/{len(group)} done")
+                print(f"  {label} {idx + 1}/{len(group)} done")
         n = len(group)
         recall = {f"recall@{k}": round(hits_at[k] / n, 4) for k in hits_at}
         hit_ranks = [r for r in ranks if r]
