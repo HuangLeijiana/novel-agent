@@ -227,6 +227,22 @@ docker run -p 8000:8000 -v $(pwd)/.env:/app/.env:ro -v $(pwd)/workspace:/app/wor
 
 CI runs unit tests on Python 3.11/3.12/3.13 on every push and PR via GitHub Actions.
 
+## 记忆检索评测（可复现）
+
+RAG 记忆检索质量由 `eval/eval_rag_retrieval.py` 量化：
+
+```bash
+# 1. 安装 rag 依赖（chromadb + sentence-transformers）
+uv sync --extra rag
+
+# 2. 运行评测（数据使用仓库内 eval/fixtures/memory 的 42 条设定事实与 30 条时间线事件）
+uv run python eval/eval_rag_retrieval.py
+```
+
+脚本走项目自身的 `NovelVectorStore + Embedder` 代码路径（BGE-small-zh 512 维）；每条记忆由本地 Ollama qwen3:8b 改写为自然中文检索问题后查询 top-k，统计 recall@k / MRR（Ollama 不可用时自动退化为原文查询，可用 `--bge-model` 指定本地模型路径）。
+
+结果写入 `eval/rag_retrieval_results.json`（当前结果：42 条事实 recall@1=100%、30 条事件 recall@5=86.7%、MRR=0.78）。
+
 ## FAQ
 
 **Q: Can I really write a complete novel for free?**

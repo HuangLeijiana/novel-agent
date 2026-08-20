@@ -1,0 +1,25 @@
+{
+  "model": "BAAI/bge-small-zh-v1.5 (512-dim, 本地加载)",
+  "query_paraphrase": "Ollama qwen3:8b 本地改写",
+  "n_facts": 42,
+  "n_events": 30,
+  "top_k": 5,
+  "collections": {
+    "facts": {
+      "recall@1": 1.0,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "mean_rank": 1.0,
+      "missed": 0
+    },
+    "events": {
+      "recall@1": 0.7333,
+      "recall@3": 0.8,
+      "recall@5": 0.8667,
+      "mrr": 0.7761,
+      "mean_rank": 1.38,
+      "missed": 4
+    }
+  }
+}
