@@ -1,7 +1,6 @@
 """Project configuration and metadata models."""
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -50,7 +49,7 @@ class ProjectConfig(BaseModel):
         default="",
         description="Desired tone, e.g. 'dark', 'light', 'whimsical', 'gritty'",
     )
-    style_reference: Optional[str] = Field(
+    style_reference: str | None = Field(
         default=None,
         description="Reference works or authors for style emulation",
     )
@@ -74,7 +73,7 @@ class ProjectMeta(BaseModel):
     """Runtime project metadata tracked across the workflow."""
 
     project_id: str = Field(..., description="Unique project identifier")
-    title: Optional[str] = Field(default=None, description="Novel title (can be set later)")
+    title: str | None = Field(default=None, description="Novel title (can be set later)")
     created_at: str = Field(
         default_factory=lambda: datetime.now().isoformat(),
         description="ISO timestamp of project creation",

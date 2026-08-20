@@ -2,10 +2,9 @@
 
 import json
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-
 
 
 def _short_id() -> str:
@@ -69,10 +68,18 @@ class PlotArc(BaseModel):
             d["arc_type"] = str(raw_type).strip().lower().replace(" ", "_")
         # Normalize arc_type to canonical form
         if "arc_type" in d:
-            arc_map = {"main": "main", "subplot": "subplot", "b_plot": "b_plot",
-                       "b-plot": "b_plot", "bplot": "b_plot", "secondary": "b_plot",
-                       "资源争夺": "subplot", "阴谋": "subplot",
-                       "resource_struggle": "subplot", "devious_machination": "b_plot"}
+            arc_map = {
+                "main": "main",
+                "subplot": "subplot",
+                "b_plot": "b_plot",
+                "b-plot": "b_plot",
+                "bplot": "b_plot",
+                "secondary": "b_plot",
+                "资源争夺": "subplot",
+                "阴谋": "subplot",
+                "resource_struggle": "subplot",
+                "devious_machination": "b_plot",
+            }
             d["arc_type"] = arc_map.get(str(d["arc_type"]).lower(), d["arc_type"])
         # Still no name? Derive from arc_type or description
         if "name" not in d or not d.get("name"):
@@ -173,9 +180,11 @@ class TurningPoint(BaseModel):
 class Hook(BaseModel):
     """A narrative hook — typically at chapter end to pull readers forward."""
 
-    hook_type: str = Field(default="cliffhanger", description="Type of hook: cliffhanger, mystery, emotional, revelation, etc.")
+    hook_type: str = Field(
+        default="cliffhanger", description="Type of hook: cliffhanger, mystery, emotional, revelation, etc."
+    )
     description: str = Field(default="", description="The hook content")
-    resolve_chapter: Optional[int] = Field(
+    resolve_chapter: int | None = Field(
         default=None,
         description="Chapter where this hook pays off (null = unresolved)",
     )
@@ -314,7 +323,7 @@ class MasterOutline(BaseModel):
     """Complete story outline with all arcs, volumes, and turning points."""
 
     title: str = Field(default="", description="Novel title")
-    subtitle: Optional[str] = Field(default=None, description="Novel subtitle or tagline")
+    subtitle: str | None = Field(default=None, description="Novel subtitle or tagline")
     logline: str = Field(default="", description="One-sentence story summary (logline)")
     main_plot: list[PlotArc] = Field(default_factory=list, description="Main plot arcs")
     subplots: list[PlotArc] = Field(default_factory=list, description="Subplot arcs")

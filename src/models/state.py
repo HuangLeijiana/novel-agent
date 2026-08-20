@@ -1,6 +1,6 @@
 """LangGraph root state — the single state object flowing through the workflow."""
 
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -25,67 +25,67 @@ class MainState(BaseModel):
     """
 
     # ===== Identity =====
-    project_meta: Optional[ProjectMeta] = Field(
+    project_meta: ProjectMeta | None = Field(
         default=None,
         description="Project metadata (created in Phase 1)",
     )
 
     # ===== Core Artifacts (populated progressively) =====
-    project_config: Optional[ProjectConfig] = Field(
+    project_config: ProjectConfig | None = Field(
         default=None,
         description="User-provided project configuration (Phase 1 input)",
     )
-    bible: Optional[NovelBible] = Field(
+    bible: NovelBible | None = Field(
         default=None,
         description="Novel Bible (populated in Phase 2)",
     )
-    characters: Optional[CharacterRegistry] = Field(
+    characters: CharacterRegistry | None = Field(
         default=None,
         description="Character registry (populated in Phase 2)",
     )
-    outline: Optional[MasterOutline] = Field(
+    outline: MasterOutline | None = Field(
         default=None,
         description="Master outline with volumes (populated in Phase 3)",
     )
-    chapter_plan: Optional[ChapterPlan] = Field(
+    chapter_plan: ChapterPlan | None = Field(
         default=None,
         description="Current chapter plan (populated in Phase 4)",
     )
-    chapter_draft: Optional[ChapterDraft] = Field(
+    chapter_draft: ChapterDraft | None = Field(
         default=None,
         description="Current chapter draft (populated in Phase 5)",
     )
-    review_report: Optional[ReviewReport] = Field(
+    review_report: ReviewReport | None = Field(
         default=None,
         description="Latest review report (populated in Phase 6)",
     )
-    chapter_inspection: Optional[Any] = Field(
+    chapter_inspection: Any | None = Field(
         default=None,
         description="Structural inspection result for the current chapter (populated in Phase 5)",
     )
-    polished_chapter: Optional[PolishedChapter] = Field(
+    polished_chapter: PolishedChapter | None = Field(
         default=None,
         description="Polished chapter (populated in Phase 7)",
     )
-    memory: Optional[MemoryState] = Field(
+    memory: MemoryState | None = Field(
         default=None,
         description="Memory state (updated in Phase 8)",
     )
 
     # ===== Upstream: Commercial Research Pipeline =====
-    topic_research: Optional[TopicResearchState] = Field(
+    topic_research: TopicResearchState | None = Field(
         default=None,
         description="Topic research pipeline state (Steps 1-4: scan→benchmark→select→title)",
     )
-    mini_arc_outline: Optional[dict] = Field(
+    mini_arc_outline: dict | None = Field(
         default=None,
         description="10-chapter mini-arc outlines keyed by genre name",
     )
 
     # ===== Previous Chapter Artifacts (for rollback) =====
-    previous_chapter_plan: Optional[ChapterPlan] = Field(default=None)
-    previous_chapter_draft: Optional[ChapterDraft] = Field(default=None)
-    previous_polished_chapter: Optional[PolishedChapter] = Field(default=None)
+    previous_chapter_plan: ChapterPlan | None = Field(default=None)
+    previous_chapter_draft: ChapterDraft | None = Field(default=None)
+    previous_polished_chapter: PolishedChapter | None = Field(default=None)
 
     # ===== Control Flow =====
     current_phase: WorkflowPhase = Field(
@@ -110,19 +110,19 @@ class MainState(BaseModel):
     )
 
     # ===== Human-in-the-Loop =====
-    human_feedback: Optional[str] = Field(
+    human_feedback: str | None = Field(
         default=None,
         description="Textual feedback from the human author",
     )
-    human_decision: Optional[HumanDecision] = Field(
+    human_decision: HumanDecision | None = Field(
         default=None,
         description="Human decision: accept / revise / rewrite / rollback",
     )
-    current_inspiration: Optional[str] = Field(
+    current_inspiration: str | None = Field(
         default=None,
         description="User-provided inspiration/ideas injected before the next phase",
     )
-    rollback_target: Optional[str] = Field(
+    rollback_target: str | None = Field(
         default=None,
         description="What to rollback to: 'chapter_plan', 'chapter_draft', 'bible'",
     )

@@ -1,7 +1,7 @@
 """Character profile, relationship, and state models."""
 
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -64,8 +64,8 @@ class ArcBeat(BaseModel):
     chapter: int = Field(default=0, description="Chapter where this beat occurs")
     event: str = Field(default="", description="What happens")
     change: str = Field(default="", description="How the character changes as a result")
-    new_trait: Optional[str] = Field(default=None, description="New trait gained or revealed")
-    lost_trait: Optional[str] = Field(default=None, description="Trait lost or suppressed")
+    new_trait: str | None = Field(default=None, description="New trait gained or revealed")
+    lost_trait: str | None = Field(default=None, description="Trait lost or suppressed")
 
 
 class CharacterProfile(BaseModel):
@@ -97,10 +97,12 @@ class CharacterProfile(BaseModel):
                 pass
             # Try to extract digits, e.g. "约20岁" → 20, "3000+岁" → 3000
             import re
+
             m = re.search(r"(\d+)", s)
             if m:
                 return int(m.group(1))
         return 0  # "未知", "不详", etc.
+
     gender: str = Field(default="", description="Gender identity")
 
     # Traits
@@ -176,11 +178,11 @@ class CharacterRegistry(BaseModel):
         description="Mapping: character_id -> CharacterProfile",
     )
 
-    def get(self, character_id: str) -> Optional[CharacterProfile]:
+    def get(self, character_id: str) -> CharacterProfile | None:
         """Get a character by ID."""
         return self.characters.get(character_id)
 
-    def get_protagonist(self) -> Optional[CharacterProfile]:
+    def get_protagonist(self) -> CharacterProfile | None:
         """Get the protagonist."""
         for char in self.characters.values():
             if char.role == CharacterRole.PROTAGONIST:

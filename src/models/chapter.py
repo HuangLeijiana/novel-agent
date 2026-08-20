@@ -3,7 +3,7 @@
 import uuid
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator, field_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 def _short_id() -> str:
@@ -46,11 +46,17 @@ class Fact(BaseModel):
             d = dict(data)
             # Normalize Chinese keys to English
             cn_map = {
-                "描述": "description", "说明": "description",
-                "类别": "category", "分类": "category", "类型": "category",
-                "确定性": "certainty", "可信度": "certainty",
-                "角色": "character_id", "角色ID": "character_id",
-                "来源章节": "source_chapter", "章节": "source_chapter",
+                "描述": "description",
+                "说明": "description",
+                "类别": "category",
+                "分类": "category",
+                "类型": "category",
+                "确定性": "certainty",
+                "可信度": "certainty",
+                "角色": "character_id",
+                "角色ID": "character_id",
+                "来源章节": "source_chapter",
+                "章节": "source_chapter",
             }
             for cn_key, en_key in cn_map.items():
                 if cn_key in d and en_key not in d:

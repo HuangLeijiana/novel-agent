@@ -4,10 +4,9 @@ Covers the upstream workflow: platform scanning → benchmark analysis →
 topic generation → scoring → title/synopsis → mini-arc outline.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-
 
 # ============================================================
 # Step 1A/1B: Platform Scanning
@@ -242,12 +241,12 @@ class TopicResearchState(BaseModel):
     Stored in MainState.topic_research.
     """
 
-    feilu_scan: Optional[ScanReport] = Field(default=None, description="飞卢扫榜结果")
-    fanqie_scan: Optional[ScanReport] = Field(default=None, description="番茄扫榜结果")
-    cross_platform: Optional[CrossPlatformReport] = Field(default=None, description="双榜交叉结论")
-    benchmarks: Optional[BenchmarkReport] = Field(default=None, description="对标书骨架拆解")
-    candidates: Optional[CandidateTopicsOutput] = Field(default=None, description="12候选题材")
-    scores: Optional[TopicScoringReport] = Field(default=None, description="题材评分")
+    feilu_scan: ScanReport | None = Field(default=None, description="飞卢扫榜结果")
+    fanqie_scan: ScanReport | None = Field(default=None, description="番茄扫榜结果")
+    cross_platform: CrossPlatformReport | None = Field(default=None, description="双榜交叉结论")
+    benchmarks: BenchmarkReport | None = Field(default=None, description="对标书骨架拆解")
+    candidates: CandidateTopicsOutput | None = Field(default=None, description="12候选题材")
+    scores: TopicScoringReport | None = Field(default=None, description="题材评分")
     title_synopsis: list[TitleSynopsisReport] = Field(
         default_factory=list,
         description="最终2个题材的书名和简介",

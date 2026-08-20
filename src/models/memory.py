@@ -1,7 +1,6 @@
 """Memory system models — short-term, long-term, timeline, foreshadowing."""
 
 import uuid
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -96,16 +95,17 @@ class ForeshadowingEntry(BaseModel):
         if isinstance(data, str):
             return {"description": data}
         return data
+
     hint_strength: float = Field(
         default=0.3,
         ge=0.0,
         description="How obvious the hint is (0 = invisible, 1 = blatant)",
     )
-    expected_payoff_chapter: Optional[int] = Field(
+    expected_payoff_chapter: int | None = Field(
         default=None,
         description="Chapter where payoff is planned (null = not yet planned)",
     )
-    payoff_chapter: Optional[int] = Field(
+    payoff_chapter: int | None = Field(
         default=None,
         description="Chapter where payoff actually occurred (null = not yet paid off)",
     )
@@ -133,11 +133,7 @@ class ForeshadowingTracker(BaseModel):
     @property
     def overdue(self) -> list[ForeshadowingEntry]:
         """Get foreshadowing that should have paid off by now but hasn't."""
-        return [
-            e for e in self.entries
-            if e.status == "active"
-            and e.expected_payoff_chapter is not None
-        ]
+        return [e for e in self.entries if e.status == "active" and e.expected_payoff_chapter is not None]
 
 
 class LongTermMemory(BaseModel):

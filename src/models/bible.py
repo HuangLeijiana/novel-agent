@@ -1,7 +1,7 @@
 """Novel Bible models — world building, factions, rules, style, themes."""
 
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -25,11 +25,11 @@ class WorldBuilding(BaseModel):
     technology_level: str = Field(default="", description="Technology/magic development level")
 
     # Magic / Power system (if applicable)
-    magic_system: Optional[str] = Field(
+    magic_system: str | None = Field(
         default=None,
         description="Magic/power system name and description",
     )
-    power_progression: Optional[str] = Field(
+    power_progression: str | None = Field(
         default=None,
         description="How powers/skills progress (cultivation levels, tech tiers, etc.)",
     )
@@ -140,6 +140,7 @@ class StyleContract(BaseModel):
                 return v / 100.0 if v > 10 else v / 10.0
             return float(v)
         return 0.0
+
     narrative_distance: str = Field(
         default="close",
         description="'close' (immersive), 'distant' (observational), 'omniscient'",
@@ -194,7 +195,7 @@ class CoreConflict(BaseModel):
         description="Character or faction IDs involved",
     )
     stakes: str = Field(default="", description="What's at stake if this conflict is not resolved")
-    resolution_chapter: Optional[int] = Field(
+    resolution_chapter: int | None = Field(
         default=None,
         description="Chapter where this conflict resolves (null = not yet planned)",
     )

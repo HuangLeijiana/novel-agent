@@ -8,19 +8,19 @@ Implements the explicit feedback entry system required by the evaluation report:
 """
 
 from datetime import datetime
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class FeedbackSentiment(str, Enum):
+class FeedbackSentiment(StrEnum):
     """User sentiment about a chapter or phase output."""
+
     THUMBS_UP = "thumbs_up"
     THUMBS_DOWN = "thumbs_down"
 
 
-class FeedbackReasonTag(str, Enum):
+class FeedbackReasonTag(StrEnum):
     """Predefined reason tags for negative feedback.
 
     These map to the evaluation report's required categories:
@@ -30,14 +30,15 @@ class FeedbackReasonTag(str, Enum):
     - AI味太重 (too much AI flavor)
     - 其他 (other)
     """
-    NOT_MEETING_EXPECTATIONS = "not_meeting_expectations"    # 不符合预期
-    CHARACTER_BROKEN = "character_broken"                      # 角色写崩了
-    PLOT_BORING = "plot_boring"                                # 情节无聊
-    AI_FLAVOR_HEAVY = "ai_flavor_heavy"                        # AI味太重
-    PACING_ISSUE = "pacing_issue"                              # 节奏问题
-    DIALOGUE_ISSUE = "dialogue_issue"                          # 对话问题
+
+    NOT_MEETING_EXPECTATIONS = "not_meeting_expectations"  # 不符合预期
+    CHARACTER_BROKEN = "character_broken"  # 角色写崩了
+    PLOT_BORING = "plot_boring"  # 情节无聊
+    AI_FLAVOR_HEAVY = "ai_flavor_heavy"  # AI味太重
+    PACING_ISSUE = "pacing_issue"  # 节奏问题
+    DIALOGUE_ISSUE = "dialogue_issue"  # 对话问题
     WORLDBUILDING_INCONSISTENT = "worldbuilding_inconsistent"  # 世界观矛盾
-    OTHER = "other"                                            # 其他
+    OTHER = "other"  # 其他
 
 
 # Human-readable labels for each reason tag
@@ -59,6 +60,7 @@ class FeedbackEntry(BaseModel):
     Stored alongside chapter artifacts for later aggregation into
     Bad Case reports and data-flywheel pipelines.
     """
+
     # Identity
     chapter_number: int = Field(default=0, description="Chapter this feedback relates to")
     phase: str = Field(default="", description="Workflow phase when feedback was given")
@@ -117,6 +119,7 @@ class FeedbackSummary(BaseModel):
 
     Used for Bad Case weekly reports and monitoring dashboards.
     """
+
     project_id: str = ""
     total_feedback: int = 0
     positive_count: int = 0
