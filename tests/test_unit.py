@@ -588,16 +588,30 @@ class TestSchedulerRouting:
             assert 0.0 <= assignment.temperature <= 2.0
 
     def test_modelscope_uses_openai_provider(self):
+        from src.config.settings import Settings
         from src.llm.scheduler import ModelScheduler
 
-        s = ModelScheduler()
+        s = ModelScheduler(
+            settings=Settings(
+                openai_api_key="test-key",
+                openai_base_url="https://api-inference.modelscope.cn/v1",
+                _env_file=None,
+            )
+        )
         provider = s._get_provider("modelscope")
         assert provider.provider_name in ("openai", "modelscope")
 
     def test_provider_lazy_initialization(self):
+        from src.config.settings import Settings
         from src.llm.scheduler import ModelScheduler
 
-        s = ModelScheduler()
+        s = ModelScheduler(
+            settings=Settings(
+                openai_api_key="test-key",
+                openai_base_url="https://api-inference.modelscope.cn/v1",
+                _env_file=None,
+            )
+        )
         # Providers dict starts empty
         assert len(s._providers) == 0
         # First access initializes

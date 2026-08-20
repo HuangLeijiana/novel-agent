@@ -9,7 +9,7 @@ from typing import Any
 from pydantic import BaseModel, ValidationError
 
 from ..config.model_assignments import ModelAssignment
-from ..config.settings import get_settings
+from ..config.settings import Settings, get_settings
 from .client import BaseLLMProvider, LLMResponse
 from .providers import (
     AnthropicProvider,
@@ -196,11 +196,17 @@ class ModelScheduler:
     - Lazy provider initialization
     """
 
-    def __init__(self, assignments: list[ModelAssignment] | None = None):
+    def __init__(
+        self,
+        assignments: list[ModelAssignment] | None = None,
+        settings: Settings | None = None,
+    ):
         """
         Args:
             assignments: List of ModelAssignment configurations.
                 If None, loads defaults from model_assignments.py.
+            settings: Optional Settings instance (for tests / custom config).
+                If None, uses the global get_settings() singleton.
         """
         if assignments is None:
             from ..config.model_assignments import get_default_assignments
@@ -213,6 +219,7 @@ class ModelScheduler:
             agent_type: {"calls": 0, "input_tokens": 0, "output_tokens": 0, "cost": 0.0, "errors": 0}
             for agent_type in self._assignments
         }
+        self._settings = settings
 
     # ================================================================
     # Public API
@@ -417,7 +424,7 @@ class ModelScheduler:
 
     def _init_provider(self, provider_name: str) -> BaseLLMProvider:
         """Initialize a provider instance based on name."""
-        settings = get_settings()
+        settings = self._settings if self._settings is not None else get_settings()
 
         if provider_name == "anthropic":
             if not settings.has_anthropic:
