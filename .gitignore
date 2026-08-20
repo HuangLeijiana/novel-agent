@@ -42,6 +42,9 @@ feilu_debug.html
 # ── Project: downloaded models ──
 models/
 
+# 但保留源码数据模型包（src/models 是核心代码，勿与下载模型混为一谈）
+!src/models/
+
 # ── Playwright MCP ──
 .playwright-mcp/
 

@@ -191,7 +191,7 @@ CONTINUITY_CHECKER_MODEL=deepseek-chat
 
 ```bash
 # Install dev dependencies
-uv sync --dev
+uv sync --extra dev
 
 # Run unit tests (no API key needed, runs in < 1s)
 uv run pytest tests/test_unit.py -v

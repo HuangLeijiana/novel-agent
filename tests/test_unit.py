@@ -10,7 +10,9 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+# 将仓库根目录加入 sys.path，保证以任意方式运行（python -m pytest / uv run pytest）都能
+# import src.* 包，且 src 内部相对导入（from ..models import ...）正常解析。
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.llm.scheduler import _try_parse_json
 
