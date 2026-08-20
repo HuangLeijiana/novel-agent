@@ -519,7 +519,8 @@ class TestFileManager:
         from src.storage.file_manager import ProjectFileManager
 
         fm = ProjectFileManager("D:\\novels", "test-project")
-        assert fm.root == Path("D:/novels/projects/test-project")
+        # Windows 上 \ 是分隔符，POSIX 上反斜杠是普通字符，统一归一化后比较
+        assert str(fm.root).replace("\\", "/") == "D:/novels/projects/test-project"
 
     def test_exists_returns_false_for_new_project(self):
         import tempfile
