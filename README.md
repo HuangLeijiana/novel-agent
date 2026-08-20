@@ -1,5 +1,7 @@
 # Novel Agent
 
+[![CI](https://github.com/HuangLeijiana/novel-agent/actions/workflows/test.yml/badge.svg)](https://github.com/HuangLeijiana/novel-agent/actions/workflows/test.yml)
+
 **Multi-agent AI novel writing system** — 12 specialized agents collaborate through a LangGraph pipeline to produce complete, coherent web novels from idea to finished chapters.
 
 > 🤖 Powered by LLMs (ModelScope, DeepSeek, Claude, OpenAI, Ollama) | 🎨 Frontend control panel | 📋 Structured planning pipeline

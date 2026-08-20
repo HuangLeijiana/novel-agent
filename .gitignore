@@ -51,7 +51,6 @@ models/
 # ── Misc ──
 *.log
 novel-agent.git/
-uv.lock
 
 # ── Eval runtime artifacts ──
 eval/eval_store/
