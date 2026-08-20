@@ -56,7 +56,11 @@ class RefinerAgent(BaseAgent):
 
         style = bible.style_contract
 
-        system = self.build_system_prompt(
+        # Compile issues into actionable feedback
+        issues_text = self._format_issues(review)
+        suggestions_text = "\n".join(f"- {s}" for s in review.suggestions)
+
+        system_default = self.build_system_prompt(
             role="文字打磨师",
             expertise="你是一位追求极致的文字编辑。你能让一段普通的文字变得精准、有力、"
             "有韵味。你擅长调整句式节奏、删除冗余、增强画面感、让对话更自然。"
@@ -67,12 +71,7 @@ class RefinerAgent(BaseAgent):
 - 禁用表达：{style.forbidden_phrases}
 - 推荐技法：{style.preferred_techniques}""",
         )
-
-        # Compile issues into actionable feedback
-        issues_text = self._format_issues(review)
-        suggestions_text = "\n".join(f"- {s}" for s in review.suggestions)
-
-        user = f"""请对以下章节进行润色和修改：
+        user_default = f"""请对以下章节进行润色和修改：
 
 【审阅报告】
 总分：{review.overall_score}/10
@@ -98,7 +97,24 @@ class RefinerAgent(BaseAgent):
 6. **节奏**：调整场景推进速度，避免均分笔墨"""
 
         if human_feedback:
-            user += f"\n\n【作者反馈】\n{human_feedback}"
+            user_default += f"\n\n【作者反馈】\n{human_feedback}"
+
+        system, user = self.render_prompts(
+            "polish_chapter",
+            system_default=system_default,
+            user_default=user_default,
+            tone=style.tone,
+            sentence_style=style.sentence_style,
+            forbidden_phrases=", ".join(style.forbidden_phrases) if style.forbidden_phrases else "无",
+            preferred_techniques=", ".join(style.preferred_techniques) if style.preferred_techniques else "无",
+            overall_score=review.overall_score,
+            dimension_scores=str(review.dimension_scores),
+            issues_text=issues_text,
+            suggestions_text=suggestions_text,
+            draft_title=draft.title,
+            draft_content=draft.content,
+            human_feedback=human_feedback,
+        )
 
         result = await self.generate_structured(
             system_prompt=system,

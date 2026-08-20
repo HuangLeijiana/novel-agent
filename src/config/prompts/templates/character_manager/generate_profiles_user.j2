@@ -1,0 +1,42 @@
+{# Character Manager — generate_profiles user prompt #}
+请为以下小说创建角色阵容：
+
+【故事灵感】{{ inspiration }}
+【题材】{{ genre }}
+【世界】{{ world_name }}（{{ world_type }}）
+【主题】{{ theme_names }}
+【核心冲突】
+{{ conflict_descs }}
+
+请创建以下角色（至少 4-6 个）：
+
+1. **主角（protagonist）** — 必须创建
+2. **反派/对手（antagonist）** — 必须创建
+3. **重要配角（deuteragonist）** — 主角的盟友或伙伴
+4. **导师角色（mentor）** — 可选的导师/引导者
+5. **其他配角（supporting）** — 1-2个重要配角
+
+每个角色需要：
+- id: 唯一ID（如 char_mc, char_ant, char_ally 等）
+- name: 名字
+- role: protagonist/antagonist/deuteragonist/supporting/minor
+- archetype: 原型（hero/mentor/herald/trickster/shadow 等）
+- age: 年龄
+- gender: 性别
+- appearance: 外貌描述（具体、有辨识度）
+- personality: 性格特征（包括优点和缺点，要有矛盾性）
+- motivation: 核心动机（ta真正想要什么）
+- flaw: 主要缺陷（阻碍ta成长的障碍）
+- backstory: 背景故事（1-2段，解释ta为何成为现在的样子）
+- abilities: 能力列表
+
+角色设计要求：
+- 主角要有让人共鸣的动机和明显的缺陷
+- 反派要有合理的动机，不能是纯粹的邪恶
+- 角色之间要有潜在的冲突和互补关系
+- 每个角色要有独特的声音和行事风格
+- 服务于主题和核心冲突
+{% if taboo_content %}
+
+【避讳】避免：{{ taboo_content }}
+{% endif %}

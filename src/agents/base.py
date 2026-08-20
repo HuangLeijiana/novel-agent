@@ -155,6 +155,25 @@ class BaseAgent(ABC):
         logger.debug(f"No template for {self.agent_type}/{method}_{prompt_type}.j2 — using inline prompt")
         return default
 
+    def render_prompts(
+        self,
+        method: str,
+        system_default: str = "",
+        user_default: str = "",
+        **variables: Any,
+    ) -> tuple[str, str]:
+        """Render both system and user prompts for a method.
+
+        Returns (system_prompt, user_prompt) — using templates when available,
+        falling back to the provided defaults.
+
+        This is the primary method agents should call. It centralizes the
+        template-vs-inline decision so individual agents don't repeat the logic.
+        """
+        system = self.render_prompt(method, "system", system_default, **variables)
+        user = self.render_prompt(method, "user", user_default, **variables)
+        return system, user
+
     def has_template(self, method: str) -> bool:
         """Check if both system+user templates exist for a method."""
         return self.prompt_loader.has_template(self.agent_type, method)
@@ -162,6 +181,27 @@ class BaseAgent(ABC):
     # ================================================================
     # Prompt helpers (inline fallback — kept for backward compat)
     # ================================================================
+
+    # ── Shared truncation helper (used by Editor & ContinuityChecker) ──
+    _MAX_CHAPTER_CHARS: int = 8000
+
+    @staticmethod
+    def _chapter_excerpt(content: str, max_chars: int | None = None) -> str:
+        """Return chapter content, truncated if it exceeds budget.
+
+        When truncation is needed, keeps the first 60% and last 40% so the
+        caller sees both setup and resolution.
+        """
+        limit = max_chars or BaseAgent._MAX_CHAPTER_CHARS
+        if len(content) <= limit:
+            return content
+        head = int(limit * 0.6)
+        tail = limit - head
+        return (
+            content[:head]
+            + f"\n\n...（中间省略 {len(content) - limit} 字）...\n\n"
+            + content[-tail:]
+        )
 
     @staticmethod
     def build_system_prompt(role: str, expertise: str, constraints: str = "", inspiration: str = "") -> str:
@@ -264,12 +304,40 @@ class BaseAgent(ABC):
             parts.append("")
 
         if memory:
+            # ── Short-term (previous chapter) ──
             st = memory.get("short_term", {})
             if st:
                 parts.append("=== 近期记忆 ===")
-                parts.append(f"上一章摘要: {st.get('current_chapter_summary', '')}")
+                prev = st.get("current_chapter_summary", "")
+                if prev:
+                    parts.append(f"上一章摘要: {prev}")
                 parts.append(f"未解决钩子: {st.get('unresolved_hooks', [])}")
                 parts.append(f"活跃伏笔: {st.get('active_foreshadowing', [])}")
-            parts.append("")
+                parts.append("")
+
+            # ── Hierarchical summaries (long-term context) ──
+            lt = memory.get("long_term", {})
+            if lt:
+                parts.append("=== 上下文脉络 ===")
+                # Current stage summary (most recent 10-chapter block)
+                stages = lt.get("stage_summaries", {})
+                if stages:
+                    latest_stage = stages.get(max(stages.keys()), "")
+                    if latest_stage:
+                        parts.append(f"当前阶段（最近10章）: {latest_stage}")
+
+                # Current arc summary (most recent 50-chapter block)
+                arcs = lt.get("arc_summaries", {})
+                if arcs:
+                    latest_arc = arcs.get(max(arcs.keys()), "")
+                    if latest_arc:
+                        parts.append(f"当前弧（最近50章）: {latest_arc}")
+
+                # Global summary (entire book)
+                gs = lt.get("global_summary", "")
+                if gs:
+                    parts.append(f"全书脉络: {gs}")
+
+                parts.append("")
 
         return "\n".join(parts)

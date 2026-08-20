@@ -130,6 +130,36 @@ class DocxSerializer:
     """Handles Word document generation for chapters using python-docx."""
 
     @staticmethod
+    def _normalize_text(text: str) -> str:
+        """Replace Unicode compatibility symbols with their ASCII forms.
+
+        Some fonts/viewers render U+2103 (℃) / U+2109 (℉) as blank glyphs,
+        making the character invisible in Word/WPS even though the data is
+        intact. °C / °F are composed from widely-supported characters.
+        """
+        return text.replace("℃", "°C").replace("℉", "°F")
+
+    @staticmethod
+    def _set_east_asian_font(doc) -> None:
+        """Set 宋体 as the explicit East Asian font on used styles.
+
+        python-docx's ``font.name`` only sets w:ascii/w:hAnsi (the Latin
+        font). Without an explicit w:eastAsia, CJK text is left to the
+        viewer's theme/default fallback font, which can render some
+        characters as blanks.
+        """
+        from docx.oxml.ns import qn
+
+        for style_name in ("Normal", "Title", "Heading 1"):
+            try:
+                st = doc.styles[style_name]
+            except KeyError:
+                continue
+            rpr = st.element.get_or_add_rPr()
+            rfonts = rpr.get_or_add_rFonts()
+            rfonts.set(qn("w:eastAsia"), "宋体")
+
+    @staticmethod
     def chapter_to_docx(
         file_path: Path,
         chapter_number: int,
@@ -144,6 +174,7 @@ class DocxSerializer:
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         doc = Document()
+        DocxSerializer._set_east_asian_font(doc)
 
         # Page margins
         for section in doc.sections:
@@ -155,7 +186,7 @@ class DocxSerializer:
         # Title
         heading_text = f"第{chapter_number}章"
         if title:
-            heading_text += f" {title}"
+            heading_text += f" {DocxSerializer._normalize_text(title)}"
         heading = doc.add_heading(heading_text, level=1)
         heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
@@ -174,7 +205,12 @@ class DocxSerializer:
                 sub = sub.strip()
                 if not sub:
                     continue
-                p = doc.add_paragraph(sub)
+                if sub.startswith("### "):
+                    p = doc.add_paragraph()
+                    run = p.add_run(DocxSerializer._normalize_text(sub[4:]))
+                    run.bold = True
+                    continue
+                p = doc.add_paragraph(DocxSerializer._normalize_text(sub))
                 # First line indent for Chinese text
                 p.paragraph_format.first_line_indent = Cm(0.74)
                 style = p.style
@@ -201,6 +237,7 @@ class DocxSerializer:
         from docx.shared import Cm, Pt
 
         doc = Document()
+        DocxSerializer._set_east_asian_font(doc)
 
         # Page margins
         for section in doc.sections:
@@ -210,7 +247,7 @@ class DocxSerializer:
             section.right_margin = Cm(3.18)
 
         # Book title page
-        title_heading = doc.add_heading(title, level=0)
+        title_heading = doc.add_heading(DocxSerializer._normalize_text(title), level=0)
         title_heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
         doc.add_page_break()
 
@@ -218,7 +255,7 @@ class DocxSerializer:
         for chapter_number, chapter_title, content in chapters:
             heading_text = f"第{chapter_number}章"
             if chapter_title:
-                heading_text += f" {chapter_title}"
+                heading_text += f" {DocxSerializer._normalize_text(chapter_title)}"
             doc.add_heading(heading_text, level=1)
             doc.add_paragraph("")
 
@@ -232,7 +269,12 @@ class DocxSerializer:
                     sub = sub.strip()
                     if not sub:
                         continue
-                    p = doc.add_paragraph(sub)
+                    if sub.startswith("### "):
+                        p = doc.add_paragraph()
+                        run = p.add_run(DocxSerializer._normalize_text(sub[4:]))
+                        run.bold = True
+                        continue
+                    p = doc.add_paragraph(DocxSerializer._normalize_text(sub))
                     p.paragraph_format.first_line_indent = Cm(0.74)
                     style = p.style
                     style.font.size = Pt(12)

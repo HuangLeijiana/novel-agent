@@ -380,12 +380,6 @@ class PlotPlannerAgent(BaseAgent):
         """Plan a single chapter in detail."""
         logger.info(f"Planning chapter {chapter_number}...")
 
-        system = self.build_system_prompt(
-            role="章节规划师",
-            expertise="将故事大纲拆解为可执行的章节计划。确保每章有明确的目标、冲突、"
-            "信息增量和章末钩子，让读者欲罢不能。",
-        )
-
         # Determine which volume this chapter belongs to
         current_volume = None
         for vol in outline.volumes:
@@ -403,19 +397,30 @@ class PlotPlannerAgent(BaseAgent):
         if memory and memory.short_term:
             prev_chapter_summary = memory.short_term.current_chapter_summary
 
-        user = f"""请为以下小说规划第 {chapter_number} 章的详细方案：
+        vol_title = current_volume.title if current_volume else "未分配"
+        vol_logline = current_volume.logline if current_volume else ""
+        tps_text = str([(tp.turning_type, tp.description) for tp in chapter_tps]) if chapter_tps else "无特定转折点"
+        char_states_text = self._format_character_states(characters, memory)
+        length_range = f"{bible.rules.chapter_length_range[0]}-{bible.rules.chapter_length_range[1]}"
+
+        system_default = self.build_system_prompt(
+            role="章节规划师",
+            expertise="将故事大纲拆解为可执行的章节计划。确保每章有明确的目标、冲突、"
+            "信息增量和章末钩子，让读者欲罢不能。",
+        )
+        user_default = f"""请为以下小说规划第 {chapter_number} 章的详细方案：
 
 【大纲】
 {outline_json}
 
-【当前卷】{current_volume.title if current_volume else "未分配"} — {current_volume.logline if current_volume else ""}
+【当前卷】{vol_title} — {vol_logline}
 
-【本章转折点】{[(tp.turning_type, tp.description) for tp in chapter_tps] if chapter_tps else "无特定转折点"}
+【本章转折点】{tps_text}
 
 【上一章摘要】{prev_chapter_summary or "这是第一章"}
 
 【角色当前状态】
-{self._format_character_states(characters, memory)}
+{char_states_text}
 
 请设计：
 
@@ -429,13 +434,29 @@ class PlotPlannerAgent(BaseAgent):
 7. **伏笔**（foreshadowing）：本章埋什么伏笔
 8. **情绪曲线**：5个情绪节点（位置0.0/0.25/0.5/0.75/1.0），标注情绪和强度
 9. **章末钩子**：如何让读者迫不及待看下一章
-10. **目标字数**：{bible.rules.chapter_length_range[0]}-{bible.rules.chapter_length_range[1]}字
+10. **目标字数**：{length_range}字
 
 设计原则：
 - 场景之间要有因果链
 - 情绪有起伏，不要平铺直叙
 - 章末必须有钩子（悬念/情绪/揭示）
 - 符合{config.tone}的语调"""
+
+        system, user = self.render_prompts(
+            "plan_chapter",
+            system_default=system_default,
+            user_default=user_default,
+            chapter_number=chapter_number,
+            outline_json=outline_json,
+            vol_title=vol_title,
+            vol_logline=vol_logline,
+            tps_text=tps_text,
+            prev_summary=prev_chapter_summary or "这是第一章",
+            char_states=char_states_text,
+            word_count_target_min=length_range.split("-")[0] if "-" in length_range else "2000",
+            word_count_target_max=length_range.split("-")[1] if "-" in length_range else "4000",
+            tone=config.tone,
+        )
 
         result = await self.generate_structured(
             system_prompt=system,

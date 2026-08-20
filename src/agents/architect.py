@@ -136,13 +136,12 @@ class ArchitectAgent(BaseAgent):
 
     async def build_world(self, config: ProjectConfig) -> WorldBuilding:
         """Design the story world based on project configuration."""
-        system = self.build_system_prompt(
+        system_default = self.build_system_prompt(
             role="世界观架构师",
             expertise="构建宏大、自洽、有深度的虚构世界。擅长设计地理、历史、文化、力量体系，"
             "并能确保世界观服务于故事主题和爽点。",
         )
-
-        user = f"""请为以下小说创意构建完整的世界观设定：
+        user_default = f"""请为以下小说创意构建完整的世界观设定：
 
 【灵感/创意】
 {config.inspiration}
@@ -167,7 +166,20 @@ class ArchitectAgent(BaseAgent):
 - 留白：不要填满所有细节，给写作时留发挥空间"""
 
         if config.taboo_content:
-            user += f"\n\n【避讳内容】请避免涉及：{', '.join(config.taboo_content)}"
+            user_default += f"\n\n【避讳内容】请避免涉及：{', '.join(config.taboo_content)}"
+
+        system, user = self.render_prompts(
+            "build_world",
+            system_default=system_default,
+            user_default=user_default,
+            inspiration=config.inspiration,
+            genre=", ".join(config.genre),
+            target_readers=config.target_readers,
+            target_length=config.target_length.value,
+            target_word_count=config.target_word_count,
+            tone=config.tone,
+            taboo_content=", ".join(config.taboo_content) if config.taboo_content else "",
+        )
 
         result = await self.generate_structured(
             system_prompt=system,
@@ -196,14 +208,14 @@ class ArchitectAgent(BaseAgent):
 
     async def design_factions(self, config: ProjectConfig, world: WorldBuilding) -> list[Faction]:
         """Design factions and organizations in the world."""
-        system = self.build_system_prompt(
+        world_summary = json.dumps(world.model_dump(), ensure_ascii=False, indent=2)
+
+        system_default = self.build_system_prompt(
             role="势力架构师",
             expertise="设计有深度、有冲突、有层次的组织势力。每个势力应有明确的目标、"
             "内部结构、资源掌控和与其他势力的关系。",
         )
-
-        world_summary = json.dumps(world.model_dump(), ensure_ascii=False, indent=2)
-        user = f"""基于以下世界观，设计 3-6 个主要势力/组织：
+        user_default = f"""基于以下世界观，设计 3-6 个主要势力/组织：
 
 【世界观】
 {world_summary}
@@ -218,6 +230,15 @@ class ArchitectAgent(BaseAgent):
 4. 至少有一个势力是主角所属或对立的
 
 请为每个势力生成唯一ID（格式：faction_xxx）"""
+
+        system, user = self.render_prompts(
+            "design_factions",
+            system_default=system_default,
+            user_default=user_default,
+            world_summary=world_summary,
+            genre=", ".join(config.genre),
+            target_readers=config.target_readers,
+        )
 
         result = await self.generate_structured(
             system_prompt=system,
@@ -234,12 +255,11 @@ class ArchitectAgent(BaseAgent):
 
     async def create_style_contract(self, config: ProjectConfig) -> StyleContract:
         """Define the writing style contract for the novel."""
-        system = self.build_system_prompt(
+        system_default = self.build_system_prompt(
             role="文风设计师",
             expertise="为小说定义统一的文风契约。精通各类文学风格，能根据题材和目标读者精准定位最适合的文风参数。",
         )
-
-        user = f"""请为以下小说定义「文风契约」：
+        user_default = f"""请为以下小说定义「文风契约」：
 
 【灵感】{config.inspiration}
 【题材】{", ".join(config.genre)}
@@ -258,6 +278,18 @@ class ArchitectAgent(BaseAgent):
 8. 推荐的写作技法
 
 注意：这是{config.target_length.value}级别的小说，文风需要能支撑长篇写作。"""
+
+        system, user = self.render_prompts(
+            "create_style_contract",
+            system_default=system_default,
+            user_default=user_default,
+            inspiration=config.inspiration,
+            genre=", ".join(config.genre),
+            target_readers=config.target_readers,
+            tone=config.tone,
+            style_reference=config.style_reference or "无特定参考",
+            target_length=config.target_length.value,
+        )
 
         result = await self.generate_structured(
             system_prompt=system,
@@ -284,12 +316,11 @@ class ArchitectAgent(BaseAgent):
 
     async def generate_themes(self, config: ProjectConfig, world: WorldBuilding) -> list[Theme]:
         """Generate thematic elements for the novel."""
-        system = self.build_system_prompt(
+        system_default = self.build_system_prompt(
             role="主题设计师",
             expertise="为小说提炼核心主题，并设计主题在人物、情节和世界观中的呈现方式。",
         )
-
-        user = f"""基于以下信息，为小说提炼 3-5 个核心主题：
+        user_default = f"""基于以下信息，为小说提炼 3-5 个核心主题：
 
 【灵感】{config.inspiration}
 【题材】{", ".join(config.genre)}
@@ -299,6 +330,16 @@ class ArchitectAgent(BaseAgent):
 - 名称（如「救赎」「牺牲」「权力的代价」）
 - 描述（这个主题在故事中的含义）
 - 呈现方式（如何通过人物、情节、世界设定来表达）"""
+
+        system, user = self.render_prompts(
+            "generate_themes",
+            system_default=system_default,
+            user_default=user_default,
+            inspiration=config.inspiration,
+            genre=", ".join(config.genre),
+            world_name=world.name,
+            world_type=world.world_type,
+        )
 
         result = await self.generate_structured(
             system_prompt=system,
@@ -316,14 +357,14 @@ class ArchitectAgent(BaseAgent):
         factions: list[Faction],
     ) -> list[CoreConflict]:
         """Define core conflicts driving the narrative."""
-        system = self.build_system_prompt(
+        factions_summary = json.dumps([f.model_dump() for f in factions], ensure_ascii=False, indent=2)
+
+        system_default = self.build_system_prompt(
             role="冲突架构师",
             expertise="设计推动故事发展的核心冲突。理解不同类型冲突（人与人、人与社会、"
             "人与自我、人与自然）的叙事功能。",
         )
-
-        factions_summary = json.dumps([f.model_dump() for f in factions], ensure_ascii=False, indent=2)
-        user = f"""基于以下信息，设计 3-5 个核心冲突：
+        user_default = f"""基于以下信息，设计 3-5 个核心冲突：
 
 【灵感】{config.inspiration}
 【题材】{", ".join(config.genre)}
@@ -340,6 +381,16 @@ class ArchitectAgent(BaseAgent):
 - 至少有一个核心冲突是 person_vs_self（内在冲突）
 - 至少有一个冲突涉及势力对抗
 - 冲突之间应有层次和关联"""
+
+        system, user = self.render_prompts(
+            "define_conflicts",
+            system_default=system_default,
+            user_default=user_default,
+            inspiration=config.inspiration,
+            genre=", ".join(config.genre),
+            world_name=world.name,
+            factions_summary=factions_summary,
+        )
 
         result = await self.generate_structured(
             system_prompt=system,
@@ -361,17 +412,26 @@ class ArchitectAgent(BaseAgent):
         themes: list[Theme],
     ) -> tuple[str, list[str]]:
         """Design the pleasure point model and narrative constraints."""
-        system = self.build_system_prompt(
+        system_default = self.build_system_prompt(
             role="爽点架构师",
             expertise="精通网文和小说的爽点设计。理解不同类型读者的阅读期待，能设计出令人欲罢不能的阅读体验节奏。",
         )
-
-        user = f"""为以下小说设计「爽点模型」和「叙事约束」：
+        user_default = f"""为以下小说设计「爽点模型」和「叙事约束」：
 
 【灵感】{config.inspiration}
 【题材】{", ".join(config.genre)}
 【目标读者】{config.target_readers}
 【世界观类型】{world.world_type}"""
+
+        system, user = self.render_prompts(
+            "design_pleasure_points",
+            system_default=system_default,
+            user_default=user_default,
+            inspiration=config.inspiration,
+            genre=", ".join(config.genre),
+            target_readers=config.target_readers,
+            world_type=world.world_type,
+        )
 
         result = await self.generate_structured(
             system_prompt=system,

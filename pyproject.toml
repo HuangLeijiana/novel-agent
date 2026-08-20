@@ -37,6 +37,10 @@ dev = [
     "httpx-ws>=0.6.0",
     "ruff>=0.16.1",
 ]
+rag = [
+    "chromadb>=0.5.0",
+    "sentence-transformers>=3.0.0",
+]
 
 [tool.ruff]
 line-length = 120

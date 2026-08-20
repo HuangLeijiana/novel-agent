@@ -93,12 +93,6 @@ class CharacterManagerAgent(BaseAgent):
         bible: NovelBible,
     ) -> list[CharacterProfile]:
         """Generate core character profiles."""
-        system = self.build_system_prompt(
-            role="角色设计师",
-            expertise="创造立体、有深度、令人难忘的小说角色。精通角色原型（英雄、导师、"
-            "伙伴、信使、捣蛋鬼、阴影等），能为每个角色赋予独特的声音、动机和缺陷。",
-        )
-
         # Build context
         world = bible.world
         themes = bible.themes
@@ -107,7 +101,12 @@ class CharacterManagerAgent(BaseAgent):
         theme_names = ", ".join(t.name for t in themes)
         conflict_descs = "\n".join(f"- {c.description}" for c in conflicts)
 
-        user = f"""请为以下小说创建角色阵容：
+        system_default = self.build_system_prompt(
+            role="角色设计师",
+            expertise="创造立体、有深度、令人难忘的小说角色。精通角色原型（英雄、导师、"
+            "伙伴、信使、捣蛋鬼、阴影等），能为每个角色赋予独特的声音、动机和缺陷。",
+        )
+        user_default = f"""请为以下小说创建角色阵容：
 
 【故事灵感】{config.inspiration}
 【题材】{", ".join(config.genre)}
@@ -146,7 +145,20 @@ class CharacterManagerAgent(BaseAgent):
 - 服务于主题和核心冲突"""
 
         if config.taboo_content:
-            user += f"\n\n【避讳】避免：{', '.join(config.taboo_content)}"
+            user_default += f"\n\n【避讳】避免：{', '.join(config.taboo_content)}"
+
+        system, user = self.render_prompts(
+            "generate_profiles",
+            system_default=system_default,
+            user_default=user_default,
+            inspiration=config.inspiration,
+            genre=", ".join(config.genre),
+            world_name=world.name,
+            world_type=world.world_type,
+            theme_names=theme_names,
+            conflict_descs=conflict_descs,
+            taboo_content=", ".join(config.taboo_content) if config.taboo_content else "",
+        )
 
         result = await self.generate_structured(
             system_prompt=system,
@@ -163,17 +175,16 @@ class CharacterManagerAgent(BaseAgent):
         bible: NovelBible,
     ) -> CharacterRegistry:
         """Build relationship network between all characters."""
-        system = self.build_system_prompt(
-            role="角色关系设计师",
-            expertise="设计复杂、真实、有张力的角色关系网络。理解权力动态、情感层次、信任构建和关系演变。",
-        )
-
         char_summaries = []
         for cid, char in registry.characters.items():
             char_summaries.append(f"[{cid}] {char.name} ({char.role}) - {char.personality[:100]}")
         char_list = "\n".join(char_summaries)
 
-        user = f"""基于以下角色列表，为每对角色设计关系：
+        system_default = self.build_system_prompt(
+            role="角色关系设计师",
+            expertise="设计复杂、真实、有张力的角色关系网络。理解权力动态、情感层次、信任构建和关系演变。",
+        )
+        user_default = f"""基于以下角色列表，为每对角色设计关系：
 
 【角色列表】
 {char_list}
@@ -192,6 +203,14 @@ class CharacterManagerAgent(BaseAgent):
 - 关系要服务于故事冲突和主题
 - 要有张力和变化空间，不要都是和谐的
 - 主角和反派的关系是重中之重"""
+
+        system, user = self.render_prompts(
+            "build_relationships",
+            system_default=system_default,
+            user_default=user_default,
+            char_list=char_list,
+            theme_names=", ".join(t.name for t in bible.themes),
+        )
 
         result = await self.generate_structured(
             system_prompt=system,
@@ -213,12 +232,6 @@ class CharacterManagerAgent(BaseAgent):
         bible: NovelBible,
     ) -> CharacterRegistry:
         """Design character arcs for major characters."""
-        system = self.build_system_prompt(
-            role="角色弧线设计师",
-            expertise="为角色设计有层次的成长弧线。精通各种弧线类型（正向成长、堕落、"
-            "救赎、幻灭等），能让角色变化既出人意料又合情合理。",
-        )
-
         major_chars = {
             cid: char
             for cid, char in registry.characters.items()
@@ -230,7 +243,12 @@ class CharacterManagerAgent(BaseAgent):
             char_descriptions.append(f"[{cid}] {char.name} - 动机: {char.motivation} - 缺陷: {char.flaw}")
         char_list = "\n".join(char_descriptions)
 
-        user = f"""为主要角色设计角色弧线（变化轨迹）：
+        system_default = self.build_system_prompt(
+            role="角色弧线设计师",
+            expertise="为角色设计有层次的成长弧线。精通各种弧线类型（正向成长、堕落、"
+            "救赎、幻灭等），能让角色变化既出人意料又合情合理。",
+        )
+        user_default = f"""为主要角色设计角色弧线（变化轨迹）：
 
 【角色】
 {char_list}
@@ -246,6 +264,13 @@ class CharacterManagerAgent(BaseAgent):
 - 弧线要体现角色的成长或堕落
 - 变化要循序渐进，有因果关联
 - 关键节点应和故事转折点对齐"""
+
+        system, user = self.render_prompts(
+            "design_arcs",
+            system_default=system_default,
+            user_default=user_default,
+            char_list=char_list,
+        )
 
         result = await self.generate_structured(
             system_prompt=system,

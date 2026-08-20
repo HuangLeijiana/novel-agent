@@ -51,30 +51,42 @@ class ReaderSimulatorAgent(BaseAgent):
 
         Returns a dict with engagement metrics and reader-centric feedback.
         """
-        system = self.build_system_prompt(
+        reader = target_reader or "普通小说读者"
+        chapter_text = self._chapter_excerpt(draft.content, max_chars=6000)
+
+        system_default = self.build_system_prompt(
             role="读者体验模拟器",
-            expertise=f"""你能够完全代入{target_reader or "目标读者"}的视角来阅读小说。
+            expertise=f"""你能够完全代入{reader}的视角来阅读小说。
 你像真正的读者一样：会被钩子吸引、会在无聊处走神、会对角色产生情感投射、
 会在反转处感到震撼。你不会用编辑的眼光分析——你用的是读者的心。""",
         )
+        user_default = f"""请以目标读者的身份阅读以下章节：
 
-        user = f"""请以目标读者的身份阅读以下章节：
-
-【读者画像】{target_reader or "普通小说读者"}
+【读者画像】{reader}
 【文风】{bible.style_contract.tone}
 【题材】{bible.world.world_type}
 
-【章节正文】
-{draft.content[:1500]}{"...(因篇幅截断)" if len(draft.content) > 1500 else ""}
+【章节全文】
+{chapter_text}
 
 请以读者视角回答：
 1. **沉浸感评分**（0-10）：你有多沉浸在故事中？
 2. **情感冲击**：读完有什么感觉？兴奋？感动？期待？平淡？
-3. **无聊段落**：有没有让你想跳过的部分？
-4. **兴奋段落**：哪些部分让你读得最投入？
+3. **无聊段落**：有没有让你想跳过的部分？（请引用具体段落）
+4. **兴奋段落**：哪些部分让你读得最投入？（请引用具体段落）
 5. **继续阅读意愿**（0-10）：多想立刻读下一章？
 6. **读者疑问**：你在阅读中产生了什么困惑或好奇？
 7. **章末钩子效果**：结尾让你多想看下一章？"""
+
+        system, user = self.render_prompts(
+            "simulate_reading",
+            system_default=system_default,
+            user_default=user_default,
+            target_reader=reader,
+            tone=bible.style_contract.tone,
+            world_type=bible.world.world_type,
+            chapter_text=chapter_text,
+        )
 
         result = await self.generate_structured(
             system_prompt=system,

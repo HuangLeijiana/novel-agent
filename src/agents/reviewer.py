@@ -130,14 +130,22 @@ class ReviewerAgent(BaseAgent):
         """
         logger.info(f"Adversarial review of chapter {draft.chapter_number}...")
 
-        system = self._build_adversarial_system_prompt(bible, config)
-        user = self._build_adversarial_user_prompt(
+        system_default = self._build_adversarial_system_prompt(bible, config)
+        user_default = self._build_adversarial_user_prompt(
             draft=draft,
             chapter_plan=chapter_plan,
             bible=bible,
             characters=characters,
             outline=outline,
             memory=memory,
+        )
+
+        system, user = self.render_prompts(
+            "adversarial_review",
+            system_default=system_default,
+            user_default=user_default,
+            chapter_number=draft.chapter_number,
+            chapter_title=draft.title,
         )
 
         try:

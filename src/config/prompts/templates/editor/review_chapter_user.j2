@@ -1,21 +1,18 @@
 {# Editor Agent — review_chapter user prompt #}
 请对第{{ chapter_number }}章进行综合评审：
 
-【章节目标】{{ chapter_goal }}
+【章节目标】{{ goal }}
 【预期情绪曲线】{{ emotional_curve }}
 【章末钩子设计】{{ ending_hook }}
 
-【章节正文（开头500字）】
-{{ content_opening }}
+【本章全文】
+{{ chapter_text }}
 
-【章节正文（结尾500字）】
-{{ content_ending }}
-
-【已发现的问题】
+【各维度专项检查发现的问题】
 {{ issues_text }}
 
 请给出：
-1. 总体评分（0-10）
+1. 总体评分（0-10，请严格打分，不要给面子）
 2. 各维度评分：
    - consistency: 设定一致性
    - character: 角色行为一致性
@@ -23,8 +20,8 @@
    - hook: 爽点/钩子效果
    - style: 文风稳定性
    - ai_flavor: AI味程度（越高越自然）
-3. 主要问题列表
+3. 主要问题列表（按严重程度排序）
 4. 本章优点
-5. 改进建议
+5. 改进建议（具体可操作）
 
 注意：评分要客观，有问题就指出，不要过度赞美。

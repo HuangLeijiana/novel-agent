@@ -163,7 +163,7 @@ const App = {
             else if (tab === 'bible') { const d = await API.getBible(this.currentProjectId); document.getElementById('bible-content').innerHTML = Components.bibleEditable(d); }
             else if (tab === 'characters') { const d = await API.getCharacters(this.currentProjectId); document.getElementById('characters-content').innerHTML = Components.charactersEditable(d); }
             else if (tab === 'outline') { const d = await API.getOutline(this.currentProjectId); document.getElementById('outline-content').innerHTML = Components.outlineEditable(d); }
-            else if (tab === 'chapters') { const d = await API.getChapters(this.currentProjectId); let tc = 0; try { const p = await API.getProject(this.currentProjectId); tc = p.meta?.total_chapters || 0; } catch(e){} document.getElementById('chapters-content').innerHTML = Components.chaptersView(d, {workflowDone: this._workflowDone, totalChapters: tc}); }
+            else if (tab === 'chapters') { const d = await API.getChapters(this.currentProjectId); let tc = 0; try { const p = await API.getProject(this.currentProjectId); tc = p.meta?.total_chapters || 0; } catch(e){} const allDone = this._workflowDone || (Array.isArray(d) && d.length > 0 && d.every(c => c.status === 'done')); document.getElementById('chapters-content').innerHTML = Components.chaptersView(d, {workflowDone: allDone, totalChapters: tc}); }
         } catch (err) { if (!err.message?.includes('404')) console.error(err); }
     },
 
