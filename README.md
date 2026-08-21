@@ -224,10 +224,10 @@ docker run -p 8000:8000 -v $(pwd)/.env:/app/.env:ro -v $(pwd)/workspace:/app/wor
 
 | Type | Command | API Key | What It Tests |
 |------|---------|---------|---------------|
-| **Unit** | `pytest tests/test_unit.py -v` | No | Pydantic models, JSON repair, content safety, prompts, settings (50+ tests) |
+| **Unit** | `pytest tests/ -k "not modelscope"` | No | Pydantic models, JSON repair, content safety, prompts, settings, graph, feedback (126+ tests) |
 | **Integration** | `pytest tests/ -v -k "modelscope"` | Yes | End-to-end agent pipeline against real LLMs |
 
-CI runs unit tests on Python 3.11/3.12/3.13 on every push and PR via GitHub Actions.
+CI runs the full non-integration suite on Python 3.11/3.12/3.13 on every push and PR via GitHub Actions.
 
 ## 记忆检索评测（可复现）
 

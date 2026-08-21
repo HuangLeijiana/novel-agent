@@ -34,7 +34,8 @@ jobs:
         continue-on-error: true
 
       - name: Run unit tests
-        run: uv run pytest tests/test_unit.py -v
+        # 全量运行非 modelscope 测试（modelscope 集成测试需要 API key，走下方 integration job）
+        run: uv run pytest tests/ -v -k "not modelscope"
 
   integration:
     runs-on: ubuntu-latest
